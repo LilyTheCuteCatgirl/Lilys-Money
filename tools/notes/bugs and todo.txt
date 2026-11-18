@@ -1,0 +1,18 @@
+
+
+
+
+
+
+// TODO: add support for shulker boxes in /ah and /shop
+
+// TODO: add support for potions in /ah and /shop
+
+normaly should be posible https://feedback.minecraft.net/hc/en-us/articles/49852828563853-Minecraft-Bedrock-Edition-26-60-Changelog#:~:text=Shulker%20Box%20items%20now%20return%20a%20valid%20ItemInventoryComponent
+
+
+
+
+
+
+
