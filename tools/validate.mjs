@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BP, RP, ROOT, validateProject } from "./project.mjs";
+import { BP, validateProject } from "./project.mjs";
 
 function listScripts(dir) {
     return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -11,23 +11,29 @@ function listScripts(dir) {
 }
 
 export function validate() {
-    const { version } = validateProject();
-    let errors = 0;
-    const scripts = listScripts(path.join(BP, "scripts"));
-    if (!scripts.length) throw new Error("No behavior-pack scripts found.");
-    const imports = /\b(?:import|export)\s+(?:[^;'"\n]*?\sfrom\s*)?["'](\.[^"']+)["']/g;
-    for (const script of scripts) {
-        const contents = fs.readFileSync(script, "utf8");
-        for (const [, relative] of contents.matchAll(imports)) {
+    const { version, entry } = validateProject();
+    const scripts = new Set(listScripts(path.join(BP, "scripts")));
+    const visited = new Set();
+    const active = new Set();
+    // Pack scripts use named imports, named re-exports and side-effect imports.
+    const imports = /^\s*(?:import|export)\s+(?:\{[^}]*\}\s*from\s*)?["'](\.[^"']+)["']/gm;
+
+    function visit(script) {
+        if (active.has(script))
+            throw new Error(`Circular import: ${[...active, script].map((file) => path.relative(BP, file)).join(" -> ")}`);
+        if (visited.has(script)) return;
+        active.add(script);
+        for (const [, relative] of fs.readFileSync(script, "utf8").matchAll(imports)) {
             const target = path.resolve(path.dirname(script), relative);
-            if (!fs.existsSync(target)) {
-                console.error(`Missing import: ${path.relative(ROOT, script)} → ${relative}`);
-                errors++;
-            }
+            if (!scripts.has(target)) throw new Error(`Missing script import in ${path.relative(BP, script)}: ${relative}`);
+            visit(target);
         }
+        active.delete(script);
+        visited.add(script);
     }
-    if (errors) throw new Error(`${errors} missing local import(s).`);
-    console.log(`Validated Lily's Money v${version}: ${scripts.length} JavaScript files and both pack manifests.`);
+    visit(path.resolve(BP, entry));
+    for (const script of scripts) if (!visited.has(script)) throw new Error(`Unreachable script: ${path.relative(BP, script)}`);
+    console.log(`Validated Lily's Money v${version}: ${scripts.size} JavaScript files and both pack manifests.`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

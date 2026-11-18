@@ -1,20 +1,11 @@
 // BP/scripts/commands/sell.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
 import { CONFIG } from "../config.js";
-import {
-    ensureMoneyObjectives,
-    getBalanceCents,
-    setBalanceFromTotalCents,
-    parseFloatToCents,
-    formatCents,
-    isAdminOrCommandBlock,
-    getCommandSource,
-    reply,
-    getInventoryContainer,
-    countItems,
-    removeItems,
-} from "../jsfunctions.js";
-import { logMoneyEvent } from "../moneylogging.js";
+import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
+import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
+import { isAdminOrCommandBlock, getCommandSource, reply } from "../modules/commandSource.js";
+import { getInventoryContainer, countItems, removeItems } from "../modules/inventory/items.js";
+import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
 // Same resolver as /buy (kept local for now)
 function getRef(origin) {

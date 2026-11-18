@@ -1,93 +1,12 @@
 // BP/scripts/commands/pay.js
-import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
-import {
-    ensureMoneyObjectives,
-    getBalanceCents,
-    setBalanceFromTotalCents,
-    parseFloatToCents,
-    formatCents,
-    getCommandSource,
-    isCommandBlock,
-    reply,
-} from "../jsfunctions.js";
+import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
+import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
+import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
+import { getCommandSource, isCommandBlock, reply } from "../modules/commandSource.js";
 
-import { playMoneySound } from "../jsfunctions.js";
+import { playMoneySound } from "../modules/players/preferences.js";
 
-import { logMoneyEvent } from "../moneylogging.js";
-
-function findByName(nameRaw) {
-    const name = (nameRaw ?? "").trim();
-    if (!name) return null;
-
-    const lower = name.toLowerCase();
-    for (const p of world.getAllPlayers()) {
-        if (p.name.toLowerCase() === lower) return p;
-    }
-    return null;
-}
-
-function nearestPlayer(source) {
-    const players = world.getAllPlayers();
-    if (players.length === 0) return null;
-
-    const dimId = source.dimension?.id;
-    const sLoc = source.location;
-    if (!dimId || !sLoc) return players[0] ?? null;
-
-    let best = null;
-    let bestDist = Infinity;
-
-    for (const p of players) {
-        if (p.dimension?.id !== dimId) continue;
-        const l = p.location;
-        const dx = l.x - sLoc.x;
-        const dy = l.y - sLoc.y;
-        const dz = l.z - sLoc.z;
-        const d2 = dx * dx + dy * dy + dz * dz;
-        if (d2 < bestDist) {
-            bestDist = d2;
-            best = p;
-        }
-    }
-    return best ?? players[0] ?? null;
-}
-
-function randomPlayer() {
-    const players = world.getAllPlayers();
-    if (players.length === 0) return null;
-    return players[Math.floor(Math.random() * players.length)];
-}
-
-function resolvePayTarget(source, raw) {
-    const s = (raw ?? "").trim();
-    if (!s) return { ok: false, error: "No target provided." };
-
-    if (s.startsWith("@")) {
-        const lower = s.toLowerCase();
-        if (lower === "@s") return { ok: true, player: source };
-        if (lower === "@p") return { ok: true, player: nearestPlayer(source) };
-        if (lower === "@r") return { ok: true, player: randomPlayer() };
-
-        const m = lower.match(/^@a(?:\[(.*)\])?$/);
-        if (m) {
-            const inside = m[1] ?? "";
-            if (!inside) return { ok: false, error: "Selector @a is not allowed for /pay. Use a single player." };
-
-            const cMatch = inside.match(/(?:^|,)\s*c\s*=\s*(\d+)\s*(?:,|$)/i);
-            const lMatch = inside.match(/(?:^|,)\s*limit\s*=\s*(\d+)\s*(?:,|$)/i);
-            const count = cMatch ? parseInt(cMatch[1], 10) : lMatch ? parseInt(lMatch[1], 10) : NaN;
-
-            if (count !== 1) return { ok: false, error: "Only @a[c=1] or @a[limit=1] is allowed for /pay." };
-            return { ok: true, player: nearestPlayer(source) };
-        }
-
-        return { ok: false, error: "Unsupported selector. Use a name, @s, @p, @r, or @a[c=1]." };
-    }
-
-    const byName = findByName(s);
-    if (!byName) return { ok: false, error: `Player not found: ${s}` };
-    return { ok: true, player: byName };
-}
+import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
 function resolvePaySelectorTarget(source, targetArg) {
     const targets = Array.isArray(targetArg) ? targetArg : targetArg ? [targetArg] : [];

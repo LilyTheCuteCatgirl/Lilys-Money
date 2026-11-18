@@ -1,7 +1,8 @@
 // BP/scripts/commands/balance.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
-import { CONFIG } from "../config.js";
-import { ensureMoneyObjectives, getBalanceCents, formatCents, getCommandSource, reply } from "../jsfunctions.js";
+import { ensureMoneyObjectives, getBalanceCents } from "../modules/economy/balance.js";
+import { formatCents } from "../modules/economy/formatting.js";
+import { getCommandSource, reply } from "../modules/commandSource.js";
 
 function resolveBalanceSelectorTarget(source, targetArg) {
     if (targetArg === undefined || targetArg === null) {

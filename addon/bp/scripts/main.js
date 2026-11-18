@@ -1,6 +1,6 @@
 // BP/scripts/main.js
 import { system, world } from "@minecraft/server";
-import "./ui/8crafterUiAuto.js";
+import "./modules/ui/8crafterUiAuto.js";
 
 import { CONFIG } from "./config.js";
 import {
@@ -8,16 +8,18 @@ import {
     initMoneyForAllOnlinePlayers,
     addZero,
     normalizePlayerIfNeeded,
-    applyMoneyDisplaySettings,
-    tickMoneyDisplay,
-    recreateMoneyDisplayObjectiveIfNeeded,
     getStartMoneyCents,
     getBalanceCents,
     setBalanceFromTotalCents,
+} from "./modules/economy/balance.js";
+import {
+    applyMoneyDisplaySettings,
+    tickMoneyDisplay,
+    recreateMoneyDisplayObjectiveIfNeeded,
     removePlayerFromMoneyDisplay,
-} from "./jsfunctions.js";
+} from "./modules/economy/display.js";
 
-import { rememberPlayerName } from "./nameDatabase.js";
+import { rememberPlayerName, flushSavedPlayerNames } from "./modules/players/nameDatabase.js";
 import { registerBalanceCommands } from "./commands/balance.js";
 import { registerSetMoneyCommand } from "./commands/setmoney.js";
 import { registerAddMoneyCommand } from "./commands/addmoney.js";
@@ -32,7 +34,7 @@ import { registerMoneyHelpCommand } from "./commands/moneyhelp.js";
 import { registerJobCommand } from "./commands/job.js";
 import { registerAhCommand } from "./commands/ah.js";
 
-import { initializeMoneyLogging, logPlayerJoin } from "./moneylogging.js";
+import { initializeMoneyLogging, logPlayerJoin } from "./modules/logging/moneylogging.js";
 
 /* =========================================================
    Spawn / first-join setup
@@ -106,6 +108,7 @@ function giveStartMoneyIfNeeded(player) {
 world.afterEvents.playerSpawn.subscribe((ev) => {
     if (!ev.initialSpawn) return;
     const player = ev.player;
+    rememberPlayerName(player);
 
     // Small welcome message. Delayed so it does not fight spawn loading.
     system.runTimeout(
@@ -159,6 +162,7 @@ system.runTimeout(
     () => {
         ensureMoneyObjectives();
         initMoneyForAllOnlinePlayers();
+        for (const player of world.getAllPlayers()) rememberPlayerName(player);
         applyMoneyDisplaySettings();
         recreateMoneyDisplayObjectiveIfNeeded();
 
@@ -217,10 +221,11 @@ system.runInterval(() => {
     tickMoneyDisplay();
 }, CONFIG.MONEY_DISPLAY_UPDATE_TICKS);
 
-let moneyDisplayRecreateRun = null;
+world.beforeEvents.playerLeave?.subscribe(({ player }) => rememberPlayerName(player));
 
 world.afterEvents.playerLeave.subscribe((ev) => {
     try {
+        flushSavedPlayerNames();
         removePlayerFromMoneyDisplay(ev.playerId);
     } catch {}
 });

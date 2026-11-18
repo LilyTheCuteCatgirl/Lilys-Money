@@ -4,7 +4,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { ROOT, BP, RP, BP_FOLDER_NAME, RP_FOLDER_NAME } from "../project.mjs";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -62,10 +61,11 @@ test("watch replaces existing packs, creates missing packs, and only re-syncs on
         await wait(800);
         assert.equal(numberOfSyncs(), 1, `Unexpected repeated syncing: ${output}`);
 
-        const edited = path.join(fakeProject, "addon", "bp", "scripts", "main.js");
+        const nestedScript = path.join("scripts", "modules", "economy", "balance.js");
+        const edited = path.join(fakeProject, "addon", "bp", nestedScript);
         fs.appendFileSync(edited, "\n// WATCH TEST LILY\n");
         await until(() => numberOfSyncs() >= 2);
-        assert.ok(fs.readFileSync(path.join(devBp, "scripts", "main.js"), "utf8").includes("WATCH TEST LILY"));
+        assert.ok(fs.readFileSync(path.join(devBp, nestedScript), "utf8").includes("WATCH TEST LILY"));
         await wait(650);
         assert.equal(numberOfSyncs(), 2, `Watch didn't settle after source edit: ${output}`);
 

@@ -1,21 +1,12 @@
 // BP/scripts/commands/buy.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
 import { CONFIG } from "../config.js";
-import {
-    ensureMoneyObjectives,
-    getBalanceCents,
-    setBalanceFromTotalCents,
-    parseFloatToCents,
-    formatCents,
-    isAdminOrCommandBlock,
-    getCommandSource,
-    reply,
-    getInventoryContainer,
-    canFitExact,
-    addExactItems,
-} from "../jsfunctions.js";
+import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
+import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
+import { isAdminOrCommandBlock, getCommandSource, reply } from "../modules/commandSource.js";
+import { getInventoryContainer, canFitExact, addExactItems } from "../modules/inventory/items.js";
 
-import { logMoneyEvent } from "../moneylogging.js";
+import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
 /* -----------------------------
    Target resolving (String) - supports:

@@ -1,17 +1,10 @@
 // BP/scripts/commands/removemoney.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
-import {
-    ensureMoneyObjectives,
-    getBalanceCents,
-    setBalanceFromTotalCents,
-    parseFloatToCents,
-    formatCents,
-    isAdminOrCommandBlock,
-    getCommandSource,
-    reply,
-} from "../jsfunctions.js";
-import { logMoneyEvent } from "../moneylogging.js";
+import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
+import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
+import { isAdminOrCommandBlock, getCommandSource, reply } from "../modules/commandSource.js";
+import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
 export function registerRemoveMoneyCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(

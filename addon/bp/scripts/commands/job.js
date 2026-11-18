@@ -3,22 +3,16 @@ import { CommandPermissionLevel, CustomCommandStatus, Player, system, world } fr
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 import { CONFIG } from "../config.js";
-import {
-    ensureMoneyObjectives,
-    getBalanceCents,
-    setBalanceFromTotalCents,
-    parseFloatToCents,
-    formatCents,
-    getCommandSource,
-    isAdmin,
-    setActionbarToast,
-} from "../jsfunctions.js";
+import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
+import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
+import { getCommandSource, isAdmin } from "../modules/commandSource.js";
+import { setActionbarToast } from "../modules/economy/display.js";
 
-import { DEFAULT_JOBS, JOB_ICON_PRESETS } from "../defaults.js";
-import { playMoneySound } from "../jsfunctions.js";
+import { DEFAULT_JOBS, JOB_ICON_PRESETS } from "../modules/defaults/jobs.js";
+import { playMoneySound } from "../modules/players/preferences.js";
 
-import { logMoneyEvent } from "../moneylogging.js";
-import { getItemIconFromId } from "../ui/itemIcons.js";
+import { logMoneyEvent } from "../modules/logging/moneylogging.js";
+import { getItemIconFromId } from "../modules/ui/itemIcons.js";
 
 function getRewardRuleIcon(type, id) {
     if (type === "kill") {

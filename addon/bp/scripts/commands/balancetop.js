@@ -1,9 +1,11 @@
 // BP/scripts/commands/balancetop.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
-import { ensureMoneyObjectives, formatCents, getCommandSource, reply, getScoreSafe } from "../jsfunctions.js";
+import { ensureMoneyObjectives, getScoreSafe } from "../modules/economy/balance.js";
+import { formatCents } from "../modules/economy/formatting.js";
+import { getCommandSource, reply } from "../modules/commandSource.js";
 
-import { getSavedPlayerNameFromParticipant } from "../nameDatabase.js";
+import { getSavedPlayerNameFromParticipant } from "../modules/players/nameDatabase.js";
 
 function buildTopMoneyMessage(rows, page, perPage) {
     const totalPages = Math.max(1, Math.ceil(rows.length / perPage));

@@ -1,18 +1,12 @@
 // BP/scripts/commands/setmoney.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
-import {
-    ensureMoneyObjectives,
-    setBalanceFromTotalCents,
-    parseFloatToCents,
-    formatCents,
-    isAdminOrCommandBlock,
-    getCommandSource,
-    reply,
-} from "../jsfunctions.js";
+import { ensureMoneyObjectives, setBalanceFromTotalCents } from "../modules/economy/balance.js";
+import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
+import { isAdminOrCommandBlock, getCommandSource, reply } from "../modules/commandSource.js";
 
-import { logMoneyEvent } from "../moneylogging.js";
-import { playMoneySound } from "../jsfunctions.js";
+import { logMoneyEvent } from "../modules/logging/moneylogging.js";
+import { playMoneySound } from "../modules/players/preferences.js";
 
 export function registerSetMoneyCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(

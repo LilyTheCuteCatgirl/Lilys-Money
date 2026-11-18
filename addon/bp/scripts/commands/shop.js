@@ -13,22 +13,16 @@ import {
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 import { CONFIG } from "../config.js";
-import {
-    ensureMoneyObjectives,
-    getBalanceCents,
-    setBalanceFromTotalCents,
-    parseFloatToCents,
-    formatCents,
-    getCommandSource,
-    isAdmin,
-    getInventoryContainer,
-    playMoneySound,
-} from "../jsfunctions.js";
+import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
+import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
+import { getCommandSource, isAdmin } from "../modules/commandSource.js";
+import { getInventoryContainer } from "../modules/inventory/items.js";
+import { playMoneySound } from "../modules/players/preferences.js";
 
-import { DEFAULT_SHOP, SHOP_CATEGORY_ICON_PRESETS } from "../defaults.js";
-import { getItemIconFromShopItem, getStackIcon } from "../ui/itemIcons.js";
+import { DEFAULT_SHOP, SHOP_CATEGORY_ICON_PRESETS } from "../modules/defaults/shop.js";
+import { getItemIconFromShopItem, getStackIcon } from "../modules/ui/itemIcons.js";
 
-import { logMoneyEvent } from "../moneylogging.js";
+import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
 // =========================================================
 // SETTINGS

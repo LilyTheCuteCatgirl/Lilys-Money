@@ -3,41 +3,27 @@ import { CommandPermissionLevel, CustomCommandStatus, Player, system } from "@mi
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 import { CONFIG } from "../config.js";
+import { getCommandSource, isAdmin } from "../modules/commandSource.js";
 import {
-    getCommandSource,
-    isAdmin,
-
-    // Global display + start money
     getMoneyDisplaySettings,
     setMoneyDisplaySettings,
     applyMoneyDisplaySettings,
     recreateMoneyDisplayObjectiveIfNeeded,
-    getStartMoneyCents,
-    setStartMoneyCents,
-    formatCents,
-    parseFloatToCents,
-
-    // Admin default personal settings
+} from "../modules/economy/display.js";
+import { getStartMoneyCents, setStartMoneyCents } from "../modules/economy/balance.js";
+import { formatCents, parseFloatToCents } from "../modules/economy/formatting.js";
+import {
     getMoneyPersonalDefaults,
     setMoneyPersonalDefaults,
-
-    // Personal settings
     hasMoneyActionbar,
     setMoneyActionbar,
     hasMoneySound,
     setMoneySound,
     hasCompactMoney,
     setCompactMoney,
-} from "../jsfunctions.js";
+} from "../modules/players/preferences.js";
 
-import { getMoneyLoggingEnabled, setMoneyLoggingEnabled } from "../moneylogging.js";
-
-function previewActionbarTemplate(raw) {
-    const s = String(raw ?? CONFIG.ACTIONBAR_TEMPLATE ?? "")
-        .replace(/\r?\n/g, " ")
-        .trim();
-    return s.length > 80 ? `${s.slice(0, 77)}...` : s;
-}
+import { getMoneyLoggingEnabled, setMoneyLoggingEnabled } from "../modules/logging/moneylogging.js";
 
 export function registerMoneySettingsCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(

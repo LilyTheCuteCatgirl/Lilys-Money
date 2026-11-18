@@ -3,8 +3,7 @@ import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Pl
 
 import { ActionFormData } from "@minecraft/server-ui";
 
-import { CONFIG } from "../config.js";
-import { getCommandSource } from "../jsfunctions.js";
+import { getCommandSource } from "../modules/commandSource.js";
 
 /* =========================================================
    8crafter UI style

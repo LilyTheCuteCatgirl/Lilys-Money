@@ -10,23 +10,18 @@ import {
     system,
     world,
 } from "@minecraft/server";
-import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/server-ui";
+import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
 import { CONFIG } from "../config.js";
-import {
-    ensureMoneyObjectives,
-    getBalanceCents,
-    setBalanceFromTotalCents,
-    parseFloatToCents,
-    formatCents,
-    getCommandSource,
-    getInventoryContainer,
-    playMoneySound,
-} from "../jsfunctions.js";
+import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
+import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
+import { getCommandSource } from "../modules/commandSource.js";
+import { getInventoryContainer } from "../modules/inventory/items.js";
+import { playMoneySound } from "../modules/players/preferences.js";
 
-import { logMoneyEvent } from "../moneylogging.js";
+import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
-import { getItemIconFromId, getItemIconFromAuction, getStackIcon } from "../ui/itemIcons.js";
+import { getItemIconFromAuction, getStackIcon } from "../modules/ui/itemIcons.js";
 
 // =========================================================
 // AH SETTINGS
