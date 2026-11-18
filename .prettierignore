@@ -1,0 +1,5 @@
+node_modules/
+builds/
+addon/rp/
+addon/bp/manifest.json
+addon/bp/entities/

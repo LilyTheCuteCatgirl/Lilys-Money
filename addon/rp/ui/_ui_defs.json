@@ -1,0 +1,11 @@
+{
+  "ui_defs": [
+    "ui/ui_template_buttons.json",
+    "ui/andexdb/andexdb_wide_long_form.json",
+    "ui/andexdb/andexdb_fullscreen_long_form.json",
+    "ui/andexdb/andexdb_general_long_form.json",
+    "ui/andexdb/andexdb_general_custom_form.json",
+    "ui/andexdb/andexdb_common.json",
+    "ui/andexdb/andexdb_grid_menu.json"
+  ]
+}

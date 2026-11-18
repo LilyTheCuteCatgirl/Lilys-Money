@@ -1,0 +1,24 @@
+{
+  "name": "lilys-money",
+  "version": "3.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Developer tools for the Lily's Money Minecraft Bedrock add-on",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "watch": "node tools/watch.mjs",
+    "watch:preview": "node tools/watch.mjs --preview",
+    "build": "node tools/build.mjs",
+    "validate": "node tools/validate.mjs",
+    "lint": "eslint \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\" && prettier --check \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\"",
+    "lint:fix": "prettier --write \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\" && eslint \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\" --fix",
+    "format": "prettier --write \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\"",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "eslint": "^9.25.1",
+    "prettier": "^3.5.3"
+  }
+}

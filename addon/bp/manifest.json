@@ -1,0 +1,65 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Lilys Money (v3.4.0)",
+    "description": "by LilyTheCatgirl Economy + GUI Shop + Jobs (cents supported). New v3 UI style by 8crafter, used with permission.  Discord: https://discord.gg/mVJmmAuQeX",
+    "min_engine_version": [
+      1,
+      21,
+      100
+    ],
+    "uuid": "9cde84d4-c9d8-499f-8ad4-2cd241cf9c64",
+    "version": [
+      3,
+      4,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "8952cf40-d78e-4466-a198-500a9f0f40bf",
+      "version": [
+        3,
+        4,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "entry": "scripts/main.js",
+      "uuid": "2cac95bb-1245-4996-8a36-1b4da84946b3",
+      "version": [
+        3,
+        4,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.1.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "2.0.0"
+    },
+    {
+      "uuid": "a0ce6263-ff12-40e3-a550-59daaa811ff5",
+      "version": [
+        3,
+        4,
+        0
+      ]
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "LilyTheCatgirl",
+      "8crafter"
+    ],
+    "url": "https://discord.gg/mVJmmAuQeX"
+  }
+}

@@ -1,0 +1,9 @@
+node_modules/
+builds/*
+!builds/.gitkeep
+*.log
+.env
+.env.local
+.DS_Store
+Thumbs.db
+Desktop.ini

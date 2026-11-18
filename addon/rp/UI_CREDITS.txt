@@ -1,0 +1,2 @@
+Custom form UI style adapted from 8Crafter's Server Utilities with permission from 8crafter.
+Used by LilyTheCatgirl for Lily's Money v3.0.0.
