@@ -8,9 +8,12 @@ import { BP, RP, validateProject } from "../project.mjs";
 import { validate } from "../validate.mjs";
 import { writeAddonZip } from "../zip.mjs";
 
+// The version comes from package.json, so new releases do not require editing this test.
+const expectedVersion = JSON.parse(fs.readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version;
+
 test("both complete manifests point to the included scripts and to each other", () => {
     const { version, entry } = validateProject();
-    assert.equal(version, "3.4.0");
+    assert.equal(version, expectedVersion);
     assert.equal(entry, "scripts/main.js");
     assert.ok(fs.statSync(path.join(BP, entry)).size > 100);
     assert.ok(fs.existsSync(path.join(RP, "ui", "server_form.json")));

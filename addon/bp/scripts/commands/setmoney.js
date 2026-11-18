@@ -46,7 +46,7 @@ export function registerSetMoneyCommand(customCommandRegistry) {
                         balanceAfter: parsed.cents,
                     });
 
-                    p.sendMessage("§r<§d§lLilys Money§r> §r" + `§aYour balance was set to §e${formatCents(parsed.cents)}§a.`);
+                    p.sendMessage("§r<§dLily's Money§r> §r" + `§aYour balance was set to §e${formatCents(parsed.cents)}§a.`);
                     playMoneySound(p);
                 }
 

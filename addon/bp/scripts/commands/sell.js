@@ -120,19 +120,19 @@ export function registerSellCommand(customCommandRegistry) {
 
                 const inv = getInventoryContainer(target);
                 if (!inv) {
-                    target.sendMessage("§r<§d§lLilys Money§r> §r" + "§cNo inventory container.");
+                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cNo inventory container.");
                     return;
                 }
 
                 const have = countItems(inv, itemId);
                 if (have < amountItems) {
-                    target.sendMessage("§r<§d§lLilys Money§r> §r" + `§cNot enough §f${itemId}§c. You have §e${have}§c/${amountItems}.`);
+                    target.sendMessage("§r<§dLily's Money§r> §r" + `§cNot enough §f${itemId}§c. You have §e${have}§c/${amountItems}.`);
                     return;
                 }
 
                 const removed = removeItems(inv, itemId, amountItems);
                 if (removed < amountItems) {
-                    target.sendMessage("§r<§d§lLilys Money§r> §r" + "§cError removing items.");
+                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cError removing items.");
                     return;
                 }
 
@@ -150,7 +150,7 @@ export function registerSellCommand(customCommandRegistry) {
                 });
 
                 target.sendMessage(
-                    "§r<§d§lLilys Money§r> §r" +
+                    "§r<§dLily's Money§r> §r" +
                         `§2Sold §e${amountItems}§2 x §f${itemId}§2 for §e${formatCents(totalPay)}§2. Balance: §e${formatCents(next)}§2.`,
                 );
                 reply(origin, `§aTook §e${amountItems}§a x §f${itemId}§a from §f${target.name}§a and paid §e${formatCents(totalPay)}§a.`);

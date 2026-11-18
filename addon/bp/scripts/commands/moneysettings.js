@@ -131,7 +131,7 @@ async function openAdminSettings(player) {
         const loggingSaved = setMoneyLoggingEnabled(transactionLoggingEnabled, player);
 
         if (!loggingSaved) {
-            player.sendMessage("§r<§d§lLilys Money§r> §cMoney logging could not be changed safely. Check the Content Log for details.");
+            player.sendMessage("§r<§dLily's Money§r> §cMoney logging could not be changed safely. Check the Content Log for details.");
         }
     }
 
@@ -165,13 +165,13 @@ async function openAdminSettings(player) {
         if (parsed.ok) {
             setStartMoneyCents(parsed.cents);
         } else {
-            player.sendMessage("§r<§d§lLilys Money§r> §r" + "§c§lStart money: use at most 2 decimals. Keeping previous value.");
+            player.sendMessage("§r<§dLily's Money§r> §r" + "§c§lStart money: use at most 2 decimals. Keeping previous value.");
         }
     } else {
-        player.sendMessage("§r<§d§lLilys Money§r> §r" + "§c§lStart money: invalid number. Keeping previous value.");
+        player.sendMessage("§r<§dLily's Money§r> §r" + "§c§lStart money: invalid number. Keeping previous value.");
     }
 
-    player.sendMessage("§r<§d§lLilys Money§r> §r" + "§aAdmin settings updated.");
+    player.sendMessage("§r<§dLily's Money§r> §r" + "§aAdmin settings updated.");
     return openRoot(player);
 }
 
@@ -193,5 +193,5 @@ async function openPersonalSettings(player) {
     setMoneySound(player, !!res.formValues?.[1]);
     setCompactMoney(player, !!res.formValues?.[2]);
 
-    player.sendMessage("§r<§d§lLilys Money§r> §r" + "§aPersonal settings updated.");
+    player.sendMessage("§r<§dLily's Money§r> §r" + "§aPersonal settings updated.");
 }

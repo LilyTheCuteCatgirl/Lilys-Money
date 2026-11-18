@@ -170,7 +170,7 @@ function loadShop() {
 // Basic Helpers
 // =========================================================
 function msg(player, text) {
-    player.sendMessage("§r<§d§lLilys Money§r> §r" + text);
+    player.sendMessage("§r<§dLily's Money§r> §r" + text);
 }
 
 function safeIsValidItemId(id) {
@@ -1164,7 +1164,7 @@ async function openShopEntry(player, itemQuery) {
     const matches = findItemInShop(shop, query);
 
     if (matches.length === 0) {
-        player.sendMessage("§r<§d§lLilys Money§r> §r" + `§cItem not found in shop: §f${itemQuery}`);
+        player.sendMessage("§r<§dLily's Money§r> §r" + `§cItem not found in shop: §f${itemQuery}`);
         return openShopRoot(player);
     }
 

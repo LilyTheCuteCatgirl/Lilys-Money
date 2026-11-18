@@ -48,7 +48,7 @@ export function registerRemoveMoneyCommand(customCommandRegistry) {
                     });
 
                     p.sendMessage(
-                        "§r<§d§lLilys Money§r> §r" + `§aRemoved §e${formatCents(parsed.cents)}§a. New balance: §e${formatCents(next)}§a.`,
+                        "§r<§dLily's Money§r> §r" + `§aRemoved §e${formatCents(parsed.cents)}§a. New balance: §e${formatCents(next)}§a.`,
                     );
                 }
 

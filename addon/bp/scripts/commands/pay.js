@@ -91,7 +91,7 @@ export function registerPayCommand(customCommandRegistry) {
                 playMoneySound(source);
                 playMoneySound(target);
                 target.sendMessage(
-                    "§r<§d§lLilys Money§r> §r" +
+                    "§r<§dLily's Money§r> §r" +
                         `§aYou received §e${formatCents(amount)}§a from §f${source.name}§a. New balance: §e${formatCents(targetBal + amount)}§a.`,
                 );
             });

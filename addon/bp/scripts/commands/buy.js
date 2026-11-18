@@ -137,7 +137,7 @@ export function registerBuyCommand(customCommandRegistry) {
 
                 const inv = getInventoryContainer(target);
                 if (!inv) {
-                    target.sendMessage("§r<§d§lLilys Money§r> §r" + "§cNo inventory container.");
+                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cNo inventory container.");
                     return;
                 }
 
@@ -146,20 +146,20 @@ export function registerBuyCommand(customCommandRegistry) {
                 // NO DEBT for buy
                 if (bal < totalCost) {
                     target.sendMessage(
-                        "§r<§d§lLilys Money§r> §r" +
+                        "§r<§dLily's Money§r> §r" +
                             `§cNot enough money. Balance: §e${formatCents(bal)}§c, needed: §e${formatCents(totalCost)}§c.`,
                     );
                     return;
                 }
 
                 if (!canFitExact(inv, itemId, amountItems)) {
-                    target.sendMessage("§r<§d§lLilys Money§r> §r" + "§cNot enough inventory space for that purchase.");
+                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cNot enough inventory space for that purchase.");
                     return;
                 }
 
                 const ok = addExactItems(inv, itemId, amountItems);
                 if (!ok) {
-                    target.sendMessage("§r<§d§lLilys Money§r> §r" + "§cFailed to give items.");
+                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cFailed to give items.");
                     return;
                 }
 
@@ -175,7 +175,7 @@ export function registerBuyCommand(customCommandRegistry) {
                 });
 
                 target.sendMessage(
-                    "§r<§d§lLilys Money§r> §r" +
+                    "§r<§dLily's Money§r> §r" +
                         `§2Bought §e${amountItems}§2 x §f${itemId}§2 for §e${formatCents(totalCost)}§2. Balance: §e${formatCents(bal - totalCost)}§2.`,
                 );
 

@@ -381,7 +381,7 @@ function deliverAhSoldMessagesForPlayer(player) {
 // =========================================================
 function msg(player, text) {
     try {
-        player.sendMessage("§r<§d§lLilys Money§r> §r" + text);
+        player.sendMessage("§r<§dLily's Money§r> §r" + text);
     } catch {}
 }
 
