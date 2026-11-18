@@ -211,7 +211,6 @@
         "handle_select": false,
         "handle_deselect": true,
         "mapping_type": "global",
-        // Deselect textbox and allow selection of another UI control with same mouse press
         "consume_event": false
       },
       {
@@ -599,11 +598,7 @@
 
   "multiline_text_edit_control@common.multiline_text_edit_box": {
     "anchor_from": "center",
-    "anchor_to": "center"/*,
-    "$place_holder_text": "npcscreen.addtext",
-    "property_bag": {
-      "#property_field": "#item_name"
-    }*/
+    "anchor_to": "center"
   },
   
   "multiline_scrolling_text_box_content@common.multiline_text_edit_control": {
@@ -614,37 +609,7 @@
     "anchor_from": "top_left",
     "anchor_to": "top_left",
     "$text_background_default": "common.edit_box_indent",
-    "$text_background_hover": "common.edit_box_indent_hover",/*
-    "$text_box_text_color": "$npc_dialog_text_color",*//*
-    "$text_box_name": "student_message_bubble",*//*
-    "$text_edit_box_content_binding_name": "#dialogtext",*/
-    // "$color": "$npc_dialog_text_color",
-    "$disabled_alpha": 1,
-    "max_length": "$max_text_edit_length",
-    "$max_text_edit_length|default": 1000,
-    "constrain_to_rect": false,
-
-    "$text_edit_box_hovered_button_id|default": "button.text_edit_box_hovered",
-
-    "$shadow": false,
-    "$font_size": "normal",
-    "$color|default": [ 1, 1, 1, 1 ],
-    "$alpha|default": 1.0,
-    "$disabled_alpha|default": 0.5,
-    "$text_offset|default": [ 2, 2 ],/*
-    "$text_edit_box_placeholder_content_binding_name": "#placeholder_dialog_text",*/
-    "$text_alpha": 1,
-    "$locked_text_alpha": "$disabled_alpha",
-    "$locked_color": "$color",/*
-    "variables": [
-      {
-        // Clear placeholder text for non-worldbuilders so they don't see "add text here" when they don't have permission to add text
-        "requires": "(not $is_worldbuilder)",
-        "$place_holder_text": "",
-        "$enabled": false
-      }
-    ],*/
-    // Clear enabled binding, we're using a variable
+    "$text_background_hover": "common.edit_box_indent_hover",
     "bindings": [
     ],
     "locked_control": "locked",
@@ -712,23 +677,17 @@
       },
       {
         "default@$text_background_default": {
-          "size": [ "100%", "100%sm" ]/*,
-          "hover_alpha": 0*/
+          "size": [ "100%", "100%sm" ]
         }
       },
       {
         "hover@$text_background_hover": {
-          "size": [ "100%", "100%sm" ]/*,
-          "hover_alpha": 1,
-          "pressed_alpha": 1,
-          "propagate_alpha": true,
-          "alpha": 0*/
+          "size": [ "100%", "100%sm" ]
         }
       },
       {
         "pressed@$text_background_hover": {
-          "size": [ "100%", "100%sm" ]/*,
-          "alpha": 0*/
+          "size": [ "100%", "100%sm" ]
         }
       }
     ],
@@ -788,7 +747,6 @@
     "$scroll_bar_left_padding_size": [ 0, 0 ],
     "$scroll_bar_right_padding_size": [ 0, 0 ],
     "$scroll_size": [ 5, "100%" ],
-    "$scroll_size_touch": "$scroll_size"/*,
-    "offset": [ 0, -1 ]*/
+    "$scroll_size_touch": "$scroll_size"
   }
 }
