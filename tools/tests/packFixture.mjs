@@ -21,12 +21,20 @@ export async function packFixture(t) {
         `
         export const world = {}, system = {}, StructureSaveMode = {}, DisplaySlotId = {};
         export const CommandPermissionLevel = {}, CustomCommandParamType = {}, CustomCommandStatus = {};
-        export const ItemTypes = {}, BlockTypes = {}, EnchantmentTypes = {};
-        export class ItemStack {}
+        export const ItemTypes = {get:id=>({id})}, BlockTypes = {}, EnchantmentTypes = {get:id=>({id})};
+        export {ItemStack} from "./itemStack.mjs";
         export class Player {}
     `,
     );
-    mockPackage("server-ui", "export class ActionFormData {} export class ModalFormData {}");
+    fs.copyFileSync(new URL("./fixtures/itemStack.mjs", import.meta.url), path.join(dir, "node_modules/@minecraft/server/itemStack.mjs"));
+    mockPackage(
+        "server-ui",
+        `class Form {
+        title(){return this} body(){return this} button(){return this} textField(){return this}
+        show(player){return player.nextForm()}
+    }
+    export class ActionFormData extends Form {} export class ModalFormData extends Form {}`,
+    );
     const load = (name) => import(pathToFileURL(path.join(dir, name)).href);
     const { world, system } = await load("node_modules/@minecraft/server/index.js");
     const properties = new Map();
@@ -43,13 +51,27 @@ export async function packFixture(t) {
         };
     }
     world.beforeEvents = { playerLeave: event(), chatSend: event() };
-    world.afterEvents = { entityDie: event(), entityRemove: event(), playerLeave: event(), playerSpawn: event() };
+    world.afterEvents = {
+        playerBreakBlock: event(),
+        playerPlaceBlock: event(),
+        entityDie: event(),
+        entityRemove: event(),
+        playerLeave: event(),
+        playerSpawn: event(),
+    };
     system.beforeEvents = { startup: event() };
     system.run = (callback) => scheduled.push(callback);
-    system.runInterval = () => 1;
+    const intervals = new Map();
+    let timerId = 0;
+    system.runInterval = (callback, ticks) => {
+        intervals.set(++timerId, { callback, ticks });
+        return timerId;
+    };
+    system.clearRun = (id) => intervals.delete(id);
+    system.currentTick = 0;
     world.getDynamicProperty = (key) => properties.get(key);
     world.getDynamicPropertyIds = () => [...properties.keys()];
-    world.setDynamicProperty = (key, value) => properties.set(key, value);
+    world.setDynamicProperty = (key, value) => (value === undefined ? properties.delete(key) : properties.set(key, value));
     system.runTimeout = (callback) => scheduled.push(callback);
-    return { load, properties, scheduled, world, system };
+    return { intervals, load, properties, scheduled, world, system };
 }

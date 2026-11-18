@@ -115,7 +115,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         () => {
             try {
                 player.sendMessage(
-                    "§d<Lily's Money - v3.4.1>§2 scripts have launched!§r\n§bLily's money Support Discord: §9https://discord.gg/mVJmmAuQeX\n§rremember to use /moneyhelp for commands and /moneysettings for settings.",
+                    "§d<Lily's Money - v3.4.2>§2 scripts have launched!§r\n§bLily's money Support Discord: §9https://discord.gg/mVJmmAuQeX\n§rremember to use /moneyhelp for commands and /moneysettings for settings.",
                 );
             } catch {}
         },

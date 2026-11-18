@@ -1,7 +1,7 @@
 {
   "format_version": 2,
   "header": {
-    "name": "Lily's Money (v3.4.1)",
+    "name": "Lily's Money (v3.4.2)",
     "description": "by LilyTheCatgirl Economy + GUI Shop + Jobs (cents supported). New v3 UI style by 8crafter, used with permission.  Discord: https://discord.gg/mVJmmAuQeX",
     "min_engine_version": [
       1,
@@ -12,7 +12,7 @@
     "version": [
       3,
       4,
-      1
+      2
     ]
   },
   "modules": [
@@ -22,7 +22,7 @@
       "version": [
         3,
         4,
-        1
+        2
       ]
     }
   ],
@@ -32,7 +32,7 @@
       "version": [
         3,
         4,
-        1
+        2
       ]
     }
   ],
