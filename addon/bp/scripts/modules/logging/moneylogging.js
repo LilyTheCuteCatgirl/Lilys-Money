@@ -82,7 +82,6 @@ export const MONEY_LOG_EVENT = Object.freeze({
 });
 
 let activeEntityCache = undefined;
-let activeEntityIdCache = undefined;
 let activeLocationCache = undefined;
 let activeDimensionIdCache = undefined;
 
@@ -470,12 +469,6 @@ function rememberActiveEntity(entity) {
     activeEntityCache = entity;
 
     try {
-        activeEntityIdCache = entity.id;
-    } catch {
-        activeEntityIdCache = undefined;
-    }
-
-    try {
         const loc = entity.location;
         activeLocationCache = { x: loc.x, y: loc.y, z: loc.z };
     } catch {
@@ -491,7 +484,6 @@ function rememberActiveEntity(entity) {
 
 function forgetActiveEntity() {
     activeEntityCache = undefined;
-    activeEntityIdCache = undefined;
     activeLocationCache = undefined;
     activeDimensionIdCache = undefined;
 }
@@ -1933,7 +1925,7 @@ function appendPersistentRecordToEntity(entity, type, payload, options = {}) {
     return true;
 }
 
-function flushPendingJobBatches(entity, anchorPlayer = null, reason = "manual", options = {}) {
+function flushPendingJobBatches(entity, anchorPlayer = null, options = {}) {
     if (!entity?.isValid) {
         return false;
     }

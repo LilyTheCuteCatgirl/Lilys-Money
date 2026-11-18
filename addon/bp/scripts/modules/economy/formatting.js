@@ -68,6 +68,6 @@ export function formatCentsCompact(totalCents) {
         }
     }
 
-    let num = rounded.toFixed(1).replace(/\.0$/, "");
+    const num = rounded.toFixed(1).replace(/\.0$/, "");
     return `${sign}$${num}${unit.s}`;
 }
