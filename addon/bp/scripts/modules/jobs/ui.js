@@ -99,9 +99,6 @@ async function openJobDetails(player, jobId) {
     return openJobRoot(player);
 }
 
-/* =========================================================
-   UI: Admin editor
-========================================================= */
 async function openAdminJobsMenu(player) {
     const form = new ActionFormData()
         .title("§6§lJob Editor§r")

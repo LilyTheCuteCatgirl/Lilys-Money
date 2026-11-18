@@ -12,8 +12,8 @@ const JOB_TAG_PREFIX = "job:";
 const JOB_STATS_DP_KEY = `lilymoney:job_stats_v1`;
 const JOB_STATS_FLUSH_INTERVAL_TICKS = Math.max(1, Math.floor(Number(CONFIG.JOB_STATS_FLUSH_INTERVAL_TICKS ?? 400)));
 const MAX_TOAST_TICKS = 40;
-const PLACED_TTL_TICKS = 20 * 60 * 30; // 30 minutes
-const _placedBlocks = new Map(); // key -> expiresTick
+const PLACED_TTL_TICKS = 20 * 60 * 30;
+const _placedBlocks = new Map();
 
 function _posKey(dimId, loc) {
     const x = Math.floor(loc.x);
@@ -26,12 +26,9 @@ function _markPlaced(dimId, loc) {
     const now = system.currentTick;
     const key = _posKey(dimId, loc);
 
-    // If this position was already tracked, remove the old entry first.
-    // Map.set() on an existing key does NOT move it to the end,
-    // and we want the Map ordered by expiration time.
+    // Reinsert the position so its new expiry follows all older entries.
     _placedBlocks.delete(key);
 
-    // Newest expiration is always inserted at the end.
     _placedBlocks.set(key, now + PLACED_TTL_TICKS);
 }
 
@@ -51,26 +48,23 @@ function _consumePlaced(dimId, loc) {
     _placedBlocks.delete(_posKey(dimId, loc));
 }
 
-// cleanup
 system.runInterval(() => {
     const now = system.currentTick;
     let removed = 0;
 
     for (const [key, exp] of _placedBlocks) {
-        // Entries are ordered from oldest expiration to newest.
-        // Once the oldest remaining entry has not expired,
-        // none of the entries after it can be expired either.
+        // The map is ordered by expiry, so the first unexpired entry ends the scan.
         if (exp > now) break;
 
         _placedBlocks.delete(key);
         removed++;
 
-        // Prevent a very large cleanup from happening in one tick.
+        // Spread large cleanups across ticks.
         if (removed >= 2000) break;
     }
 }, JOB_PLACED_BLOCK_CLEANUP_INTERVAL_TICKS);
 
-// Crops that must be fully grown to pay money (prevents plant->break exploits)
+// These crops only earn break rewards at full maturity.
 const MATURE_RULES = {
     "minecraft:wheat": { state: "growth", max: 7 },
     "minecraft:carrots": { state: "growth", max: 7 },
@@ -82,7 +76,7 @@ const MATURE_RULES = {
 
 function isMatureEnough(blockId, permutation) {
     const rule = MATURE_RULES[blockId];
-    if (!rule) return true; // no maturity requirement for this block
+    if (!rule) return true;
     try {
         const v = permutation?.getState(rule.state);
         return typeof v === "number" && v >= rule.max;
@@ -91,10 +85,7 @@ function isMatureEnough(blockId, permutation) {
     }
 }
 
-/* =========================================================
-   Player job tags
-   Cached because break/place/pickup events can fire a LOT on SMPs.
-========================================================= */
+// Cache job tags because block events can fire repeatedly for the same player.
 const _jobIdCacheByPlayerId = new Map();
 
 export function getCurrentJobId(player) {
@@ -150,9 +141,7 @@ try {
     });
 } catch {}
 
-/* =========================================================
-   Stats (DP, buffered)
-========================================================= */
+// Buffer player statistics between saves.
 let _statsBuffer = {};
 let _statsDirty = false;
 
@@ -223,9 +212,6 @@ system.runInterval(() => {
     _statsDirty = false;
 }, JOB_STATS_FLUSH_INTERVAL_TICKS);
 
-/* =========================================================
-   Payout
-========================================================= */
 function payout(player, centsEarned, toastText) {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
     const bal = getBalanceCents(dollarsObj, centsObj, player);
@@ -238,9 +224,6 @@ function payout(player, centsEarned, toastText) {
     return next;
 }
 
-/* =========================================================
-   Events: break/place/kill
-========================================================= */
 function handleReward(player, kind, id, count = 1) {
     if (!(player instanceof Player)) return;
     if (!id) return;
@@ -279,8 +262,6 @@ function handleReward(player, kind, id, count = 1) {
     });
 }
 
-// Break block (+ anti exploit)
-// Break block (+ anti exploit + mature crops)
 if (world.afterEvents?.playerBreakBlock?.subscribe) {
     world.afterEvents.playerBreakBlock.subscribe((ev) => {
         try {
@@ -291,12 +272,10 @@ if (world.afterEvents?.playerBreakBlock?.subscribe) {
 
             const perm = ev?.brokenBlockPermutation ?? ev?.blockPermutation ?? null;
 
-            // crop maturity rules
-            const rule = MATURE_RULES[blockId]; // undefined for logs/ores/etc.
+            const rule = MATURE_RULES[blockId];
             const needsMature = !!rule;
             const mature = isMatureEnough(blockId, perm);
 
-            // anti-exploit for protected break reward blocks
             if (protectsBreak(blockId)) {
                 const dimId = ev.block.dimension.id;
                 const loc = ev.block.location;
@@ -304,18 +283,15 @@ if (world.afterEvents?.playerBreakBlock?.subscribe) {
                 if (_wasPlaced(dimId, loc)) {
                     _consumePlaced(dimId, loc);
 
-                    // If it's NOT a crop (no maturity rule), placed blocks NEVER pay
+                    // Placed non-crop blocks covered by this rule cannot earn a break reward.
                     if (!needsMature) return;
 
-                    // If it IS a crop, it must be mature to pay
                     if (!mature) return;
-                    // mature crop: allow payout
                 } else {
-                    // Naturally generated crops must also be mature
+                    // The maturity rule also applies to naturally grown crops.
                     if (needsMature && !mature) return;
                 }
             } else {
-                // not protected, but crops still must be mature
                 if (needsMature && !mature) return;
             }
 
@@ -324,7 +300,6 @@ if (world.afterEvents?.playerBreakBlock?.subscribe) {
     });
 }
 
-// Place block (mark if it would be protected on break)
 if (world.afterEvents?.playerPlaceBlock?.subscribe) {
     world.afterEvents.playerPlaceBlock.subscribe((ev) => {
         try {
@@ -342,7 +317,6 @@ if (world.afterEvents?.playerPlaceBlock?.subscribe) {
     });
 }
 
-// Kill (entity die)
 if (world.afterEvents?.entityDie?.subscribe) {
     world.afterEvents.entityDie.subscribe((ev) => {
         try {

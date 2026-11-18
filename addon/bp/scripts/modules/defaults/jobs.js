@@ -1,5 +1,4 @@
-// Job rewards are stored in cents.
-// Example: 500 = $5.00
+// Job rewards use cents. A reward of 500 pays $5.00.
 
 export const JOB_ICON_PRESETS = Object.freeze([
     { name: "Book / Default", texture: "textures/items/book_writable" },

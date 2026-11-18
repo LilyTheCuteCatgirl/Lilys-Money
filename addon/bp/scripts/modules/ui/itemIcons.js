@@ -1,5 +1,3 @@
-// BP/scripts/modules/ui/itemIcons.js
-// Comprehensive vanilla Bedrock UI icon resolver.
 // Texture data snapshot: Mojang bedrock-samples v1.26.30.5 (stable).
 import { BlockTypes, ItemTypes } from "@minecraft/server";
 
@@ -47,7 +45,8 @@ export function shortItemName(id) {
     return i !== -1 ? s.slice(i + 1) : s;
 }
 
-// Manual fixes and intentionally chosen safe fallbacks.
+// Copper statues use block icons because their special rendering has no matching flat texture.
+// Heads and skulls use the helmet-slot icon as a visible fallback.
 
 const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:acacia_boat": "textures/items/boat_acacia",
@@ -394,7 +393,6 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:wheat_seeds": "textures/items/seeds_wheat",
     "minecraft:writable_book": "textures/items/book_writable",
     "minecraft:written_book": "textures/items/book_written",
-    // Add/change these in ITEM_TEXTURE_OVERRIDES:
     "minecraft:cake": "textures/items/cake",
     "minecraft:carved_pumpkin": "textures/blocks/pumpkin_face_off",
     "minecraft:chain": "textures/items/chain",
@@ -409,14 +407,12 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:composter": "textures/blocks/composter_side",
     "minecraft:copper_chest": "textures/blocks/copper_chest_inventory_front",
 
-    // Safe copper-block fallback: the statue uses special block/entity rendering.
     "minecraft:copper_golem_statue": "textures/blocks/copper_block",
 
     "minecraft:creaking_heart": "textures/blocks/creaking_heart_side_inactive",
     "minecraft:crimson_hyphae": "textures/blocks/huge_fungus/crimson_log_side",
     "minecraft:damaged_anvil": "textures/blocks/anvil_top_damaged_2",
 
-    // Safe visible helmet-slot fallbacks for heads and skulls.
     "minecraft:creeper_head": "textures/items/empty_armor_slot_helmet",
     "minecraft:dragon_head": "textures/items/empty_armor_slot_helmet",
 
@@ -428,10 +424,9 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:end_portal_frame": "textures/blocks/endframe_top",
     "minecraft:exposed_copper_chest": "textures/blocks/exposed_copper_chest_inventory_front",
 
-    // Safe copper-block fallback: the statue uses special block/entity rendering.
     "minecraft:exposed_copper_golem_statue": "textures/blocks/copper_block",
 
-    // Legacy generic oak fence-gate ID.
+    // Older worlds can use the generic fence gate ID for oak.
     "minecraft:fence_gate": "textures/blocks/planks_oak",
 
     "minecraft:filled_map": "textures/items/map_filled",
@@ -459,7 +454,6 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:ochre_froglight": "textures/blocks/ochre_froglight_side",
     "minecraft:oxidized_copper_chest": "textures/blocks/oxidized_copper_chest_inventory_front",
 
-    // Safe copper-block fallback: the statue uses special block/entity rendering.
     "minecraft:oxidized_copper_golem_statue": "textures/blocks/copper_block",
 
     "minecraft:packed_ice": "textures/blocks/ice_packed",
@@ -467,7 +461,6 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:pearlescent_froglight": "textures/blocks/pearlescent_froglight_side",
     "minecraft:petrified_oak_slab": "textures/blocks/planks_oak",
 
-    // Safe visible helmet-slot fallbacks for heads and skulls.
     "minecraft:piglin_head": "textures/items/empty_armor_slot_helmet",
     "minecraft:player_head": "textures/items/empty_armor_slot_helmet",
 
@@ -487,7 +480,6 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:sculk_catalyst": "textures/blocks/sculk_catalyst_side",
     "minecraft:sculk_shrieker": "textures/blocks/sculk_shrieker_side",
 
-    // Safe visible helmet-slot fallback.
     "minecraft:skeleton_skull": "textures/items/empty_armor_slot_helmet",
 
     "minecraft:snow_layer": "textures/blocks/snow",
@@ -516,10 +508,9 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:warped_hyphae": "textures/blocks/huge_fungus/warped_stem_side",
     "minecraft:weathered_copper_chest": "textures/blocks/weathered_copper_chest_inventory_front",
 
-    // Safe copper-block fallback: the statue uses special block/entity rendering.
     "minecraft:weathered_copper_golem_statue": "textures/blocks/copper_block",
 
-    // All waxed copper variants use the normal copper-block icon as requested.
+    // Waxed variants share the regular copper block icon.
     "minecraft:waxed_copper": "textures/blocks/copper_block",
     "minecraft:waxed_copper_block": "textures/blocks/copper_block",
     "minecraft:waxed_exposed_copper": "textures/blocks/copper_block",
@@ -596,7 +587,6 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:waxed_weathered_lightning_rod": "textures/blocks/copper_block",
     "minecraft:waxed_oxidized_lightning_rod": "textures/blocks/copper_block",
 
-    // Wooden tools and legacy generic wooden block IDs.
     "minecraft:wooden_axe": "textures/items/wood_axe",
     "minecraft:wooden_button": "textures/blocks/planks_oak",
     "minecraft:wooden_hoe": "textures/items/wood_hoe",
@@ -606,7 +596,6 @@ const ITEM_TEXTURE_OVERRIDES = {
     "minecraft:wooden_spear": "textures/items/spear/wood_spear",
     "minecraft:wooden_sword": "textures/items/wood_sword",
 
-    // Safe visible helmet-slot fallbacks for heads and skulls.
     "minecraft:wither_skeleton_skull": "textures/items/empty_armor_slot_helmet",
     "minecraft:zombie_head": "textures/items/empty_armor_slot_helmet",
 

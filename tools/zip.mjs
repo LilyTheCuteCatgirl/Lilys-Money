@@ -1,5 +1,4 @@
-// Small ZIP writer using Node built-ins only. Produces standard DEFLATE ZIP archives.
-// Each file is streamed into the archive buffer once; Lily's Money assets are small.
+// Pack files are small enough to compress and assemble the archive in memory.
 import fs from "node:fs";
 import path from "node:path";
 import { deflateRawSync } from "node:zlib";
@@ -52,8 +51,8 @@ export function writeAddonZip(outputFile, folders) {
         const local = Buffer.alloc(30);
         local.writeUInt32LE(0x04034b50, 0);
         local.writeUInt16LE(20, 4);
-        local.writeUInt16LE(0x0800, 6); // UTF-8 file names
-        local.writeUInt16LE(8, 8); // DEFLATE
+        local.writeUInt16LE(0x0800, 6); // Use UTF-8 file names.
+        local.writeUInt16LE(8, 8); // Use DEFLATE compression.
         local.writeUInt16LE(time, 10);
         local.writeUInt16LE(date, 12);
         local.writeUInt32LE(checksum, 14);

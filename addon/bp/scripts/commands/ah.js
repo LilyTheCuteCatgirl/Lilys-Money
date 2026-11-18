@@ -48,7 +48,7 @@ export function registerAhCommand(customCommandRegistry) {
         },
     );
 
-    // Friendly aliases: /ah, /ah diamond sword, /ah sell 500
+    // Chat shortcuts accept a search term or a listing price.
     try {
         world.beforeEvents.chatSend.subscribe((ev) => {
             if (!(ev.sender instanceof Player)) return;

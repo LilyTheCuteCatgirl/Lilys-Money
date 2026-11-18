@@ -2,9 +2,6 @@ import { world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
 import { clampTotalCents } from "./formatting.js";
 
-/* =========================================================
-   OBJECTIVES / SCOREBOARD
-========================================================= */
 export function safeGetObjective(name) {
     try {
         return world.scoreboard.getObjective(name);
@@ -55,7 +52,7 @@ export function setBalanceFromTotalCents(dollarsObj, centsObj, player, totalCent
     if (!id) return;
 
     const dollars = Math.floor(totalCents / 100);
-    const cents = totalCents - dollars * 100; // 0..99 even for negatives
+    const cents = totalCents - dollars * 100; // Keep the cents component between 0 and 99, including for negative balances.
 
     try {
         dollarsObj.setScore(id, dollars);
@@ -89,20 +86,15 @@ export function getStartMoneyCents() {
 export function setStartMoneyCents(cents) {
     const c = Math.max(0, Math.floor(Number(cents) || 0));
     try {
-        // store as number (works fine)
         world.setDynamicProperty(CONFIG.START_MONEY_CENTS_DP_KEY, c);
     } catch {}
     return c;
 }
 
-/* =========================================================
-   HARD INIT (like "scoreboard players add ... 0")
-========================================================= */
 export function addZero(obj, player) {
     const id = player?.scoreboardIdentity;
     if (!id) return false;
 
-    // Read current if it exists (keep it), otherwise default to 0
     let cur = 0;
     try {
         const v = obj.getScore(id);
@@ -111,7 +103,7 @@ export function addZero(obj, player) {
         cur = 0;
     }
 
-    // IMPORTANT: setScore creates the participant even when score is 0
+    // Setting even a zero score creates the participant's entry.
     try {
         obj.setScore(id, cur);
         return true;

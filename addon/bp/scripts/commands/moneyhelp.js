@@ -1,22 +1,15 @@
-// BP/scripts/commands/moneyhelp.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 
 import { ActionFormData } from "@minecraft/server-ui";
 
 import { getCommandSource } from "../modules/commandSource.js";
 
-/* =========================================================
-   8crafter UI style
-========================================================= */
+// Help pages use the 8crafter UI style.
 const UI_FULLSCREEN = "§a§n§d§e§x§d§b§_§f§u§l§l§s§c§r§e§e§n§_§l§o§n§g§_§f§o§r§m§r";
 
 function uiTitle(text) {
     return `${UI_FULLSCREEN}${text}`;
 }
-
-/* =========================================================
-   Easy-edit text pages
-========================================================= */
 
 const MAIN_MENU_BODY = "§d§lLily's Money Help Menu§r\n\n" + "§fWelcome to the help menu!\n" + "§8Pick a section below.";
 
@@ -69,14 +62,8 @@ const COMMANDS_MENU_BODY =
     "§eYellow commands §8change depending on whether you are a player or an admin.\n" +
     "§cRed commands §8are for admins.";
 
-/**
- * type:
- * "player" = green button, normal player command
- * "mixed"  = yellow button, players can use it but admins get extra UI/options
- * "admin"  = red button, admin command
- *
- * body is normal text with \n and § formatting.
- */
+// The page type controls the button color. Mixed commands give admins extra options.
+// Page bodies support newlines and Minecraft formatting codes.
 
 const COMMAND_PAGES = [
     {
@@ -336,9 +323,6 @@ const COMMAND_PAGES = [
     },
 ];
 
-/* =========================================================
-   Command type helpers
-========================================================= */
 function getCommandType(command) {
     const type = String(command?.type ?? "").toLowerCase();
 
@@ -355,9 +339,6 @@ function getCommandColor(command) {
     return "§a";
 }
 
-/* =========================================================
-   Command registration
-========================================================= */
 export function registerMoneyHelpCommand(customCommandRegistry) {
     try {
         customCommandRegistry.registerEnum(`lilymoney:moneyhelp_section`, ["quickstart", "commands", "credits"]);
@@ -408,9 +389,6 @@ export function registerMoneyHelpCommand(customCommandRegistry) {
     );
 }
 
-/* =========================================================
-   UI
-========================================================= */
 async function openMoneyHelpMain(player) {
     const form = new ActionFormData()
         .title(uiTitle("§d§lLily's Money Help"))

@@ -189,7 +189,7 @@ export async function flowBuy(player, it) {
     if (!confirmed) return;
     if (!offerAvailable(it, "buy")) return shopMessage(player, "§cThis offer has changed. Reopen the shop.");
 
-    // Re-check after the confirmation window because balance/inventory can change while the UI is open.
+    // Recheck the balance and available space after the player confirms the purchase.
     const invNow = getInventoryContainer(player);
     if (!invNow) return shopMessage(player, "§cNo inventory container.");
 
@@ -252,7 +252,7 @@ export async function flowSell(player, it) {
     if (!confirmed) return;
     if (!offerAvailable(it, "sell")) return shopMessage(player, "§cThis offer has changed. Reopen the shop.");
 
-    // Re-check after confirmation because inventory can change while the UI is open.
+    // The player may have moved or used the items while the sale form was open.
     const invNow = getInventoryContainer(player);
     if (!invNow) return shopMessage(player, "§cNo inventory container.");
 

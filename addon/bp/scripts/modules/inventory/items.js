@@ -1,8 +1,5 @@
 import { ItemTypes, ItemStack } from "@minecraft/server";
 
-/* =========================================================
-   INVENTORY HELPERS (prepared for buy/sell later)
-========================================================= */
 export function getInventoryContainer(player) {
     return player?.getComponent("minecraft:inventory")?.container ?? null;
 }

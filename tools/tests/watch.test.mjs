@@ -17,7 +17,7 @@ async function until(predicate, timeoutMs = 12000) {
 }
 
 test("watch replaces existing packs, creates missing packs, and only re-syncs on actual file changes", { timeout: 30000 }, async () => {
-    // Work solely in temp directories; never touch real AppData or the project's source.
+    // Use temporary pack folders to keep this test isolated from installed Minecraft packs.
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "lilys-money-watch-"));
     const fakeProject = path.join(tmp, "source");
     const mcRoot = path.join(tmp, "com.mojang");
@@ -32,7 +32,7 @@ test("watch replaces existing packs, creates missing packs, and only re-syncs on
     }
     fs.mkdirSync(devBp, { recursive: true });
     fs.writeFileSync(path.join(devBp, "old-unmanaged-copy.txt"), "remove me");
-    fs.mkdirSync(path.dirname(devRp), { recursive: true }); // RP folder itself is initially missing
+    fs.mkdirSync(path.dirname(devRp), { recursive: true }); // Start with a missing resource pack directory to exercise first-time deployment.
     fs.mkdirSync(path.join(mcRoot, "development_behavior_packs", "UnrelatedPack"));
     fs.writeFileSync(path.join(mcRoot, "development_behavior_packs", "UnrelatedPack", "keep.txt"), "do not touch");
     const child = spawn(process.execPath, [path.join(projectTools, "watch.mjs"), "--minecraft-path", mcRoot], {

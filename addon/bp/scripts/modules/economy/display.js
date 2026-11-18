@@ -4,17 +4,12 @@ import { formatCents } from "./formatting.js";
 import { safeGetObjective, ensureMoneyObjectives, getScoreSafe, getBalanceCents } from "./balance.js";
 import { hasMoneyActionbar, formatMoneyForPlayer } from "../players/preferences.js";
 
-/* =========================================================
-   MONEY DISPLAY SYSTEM (global toggles)
-   - Sidebar & Belowname show DOLLARS only (money objective)
-   - Actionbar shows $d.cc
-========================================================= */
+// The sidebar and below-name slots show whole dollars. The actionbar supports cents.
 
 let _displaySettingsCache = null;
 const _lastDisplayDollarByPlayerId = new Map();
 const _displayIdentityByPlayerId = new Map();
 
-// { sidebar: bool, belowname: bool, actionbar: bool }
 export function getMoneyDisplaySettings() {
     if (_displaySettingsCache) return _displaySettingsCache;
 
@@ -28,7 +23,7 @@ export function getMoneyDisplaySettings() {
     try {
         const raw = world.getDynamicProperty(CONFIG.MONEY_DISPLAY_SETTINGS_DP_KEY);
 
-        // allow migration from older "mode string"
+        // Older worlds may store a single mode name instead of a settings object.
         if (raw === "sidebar") return (_displaySettingsCache = { ...def, sidebar: true });
         if (raw === "belowname") return (_displaySettingsCache = { ...def, belowname: true });
         if (raw === "actionbar") return (_displaySettingsCache = { ...def, actionbar: true });
@@ -103,8 +98,7 @@ function getActionbarPlaceholderValue(player, key, totalCents) {
         return String(Math.abs(totalCents % 100)).padStart(2, "0");
     }
 
-    // Any other placeholder is treated as a scoreboard objective.
-    // Example: {secs} reads the player's score from objective "secs".
+    // Other placeholders read scoreboard objectives. For example, {secs} shows the player's score in secs.
     try {
         const obj = safeGetObjective(rawKey);
         if (!obj) return "0";
@@ -143,21 +137,16 @@ function safeEnsureObjective(name, displayName) {
     }
 }
 
-/**
- * Apply settings to display slots.
- * NOTE: This will overwrite sidebar/belowname display slots globally.
- */
+/** Applying these settings replaces the world's sidebar and below-name display slots. */
 export function applyMoneyDisplaySettings(settings = null) {
     const s = settings ?? getMoneyDisplaySettings();
 
-    // clear slots first (so turning one off actually removes it)
     safeClearSlot(DisplaySlotId.Sidebar);
     safeClearSlot(DisplaySlotId.BelowName);
 
     const wantScoreboard = s.sidebar || s.belowname;
 
     if (!wantScoreboard) {
-        // no scoreboard displays: remove temp objective so it leaves no traces
         safeRemoveObjective(CONFIG.MONEY_DISPLAY_OBJECTIVE);
     } else {
         const obj = safeEnsureObjective(CONFIG.MONEY_DISPLAY_OBJECTIVE, CONFIG.MONEY_DISPLAY_OBJECTIVE_NAME);
@@ -176,15 +165,11 @@ export function applyMoneyDisplaySettings(settings = null) {
     }
 }
 
-/**
- * Recreate temp objective so ONLY ONLINE players appear (no offline "disconnected").
- * Call on join/leave or after toggling sidebar/belowname.
- */
+/** Rebuild the temporary objective from online players to remove stale scoreboard entries. */
 export function recreateMoneyDisplayObjectiveIfNeeded() {
     const s = getMoneyDisplaySettings();
     if (!s.sidebar && !s.belowname) return;
 
-    // clear slots before removing
     safeClearSlot(DisplaySlotId.Sidebar);
     safeClearSlot(DisplaySlotId.BelowName);
 
@@ -205,9 +190,6 @@ export function tickMoneyDisplay() {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
     if (!dollarsObj || !centsObj) return;
 
-    // =========================
-    // ACTIONBAR / TOASTS
-    // =========================
     for (const p of players) {
         const toast = _getToastState(p);
         const wantsMoney = hasMoneyActionbar(p);
@@ -233,10 +215,7 @@ export function tickMoneyDisplay() {
         }
     }
 
-    // =========================
-    // SIDEBAR / BELOWNAME
-    // Only update scoreboard scores when the dollar amount changed.
-    // =========================
+    // Only changed dollar amounts need a scoreboard write.
     if (s.sidebar || s.belowname) {
         const obj = safeEnsureObjective(CONFIG.MONEY_DISPLAY_OBJECTIVE, CONFIG.MONEY_DISPLAY_OBJECTIVE_NAME);
         if (!obj) return;
@@ -247,9 +226,7 @@ export function tickMoneyDisplay() {
             const id = p.id;
             seen.add(id);
 
-            // Remember this player's scoreboard identity.
-            // This lets us remove only this player when they leave,
-            // instead of recreating the entire sidebar objective.
+            // Keep the identity while the player is online so their display entry can be removed after they leave.
             try {
                 if (p.scoreboardIdentity) {
                     _displayIdentityByPlayerId.set(id, p.scoreboardIdentity);
@@ -265,7 +242,6 @@ export function tickMoneyDisplay() {
             } catch {}
         }
 
-        // Keep the cache from growing if player IDs are no longer online.
         for (const id of _lastDisplayDollarByPlayerId.keys()) {
             if (!seen.has(id)) _lastDisplayDollarByPlayerId.delete(id);
         }
@@ -276,10 +252,8 @@ export function removePlayerFromMoneyDisplay(playerId) {
     const id = String(playerId ?? "");
     if (!id) return;
 
-    // Remove their cached displayed balance.
     _lastDisplayDollarByPlayerId.delete(id);
 
-    // Get the scoreboard identity we cached while they were online.
     const identity = _displayIdentityByPlayerId.get(id);
     _displayIdentityByPlayerId.delete(id);
 
@@ -290,15 +264,12 @@ export function removePlayerFromMoneyDisplay(playerId) {
 
         if (!obj) return;
 
-        // Remove ONLY the player who left.
         obj.removeParticipant(identity);
     } catch {}
 }
 
-/* =========================================================
-   ACTIONBAR TOASTS (used by /job so it doesn't fight money actionbar)
-========================================================= */
-const _actionbarToasts = new Map(); // key: player.id -> { text, expiresTick, cleared }
+// Job messages temporarily take priority over the money actionbar.
+const _actionbarToasts = new Map();
 
 export function setActionbarToast(player, text, durationTicks = 40) {
     if (!(player instanceof Player)) return;
@@ -316,7 +287,6 @@ function _getToastState(player) {
 
     const now = typeof system.currentTick === "number" ? system.currentTick : 0;
     if (now >= entry.expiresTick) {
-        // expire
         if (!entry.cleared) {
             entry.cleared = true;
             _actionbarToasts.set(player.id, entry);

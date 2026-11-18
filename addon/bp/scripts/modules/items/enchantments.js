@@ -115,7 +115,7 @@ export function filterActuallyApplicableEnchantments(typeId, enchantments) {
                     level: e.level,
                 });
             } catch {
-                // Minecraft rejected it, so it does not get stored.
+                // Keep the enchantments the game accepts for this item type.
             }
         }
 
@@ -133,5 +133,3 @@ export function filterActuallyApplicableEnchantments(typeId, enchantments) {
         return [];
     }
 }
-
-// =========================================================

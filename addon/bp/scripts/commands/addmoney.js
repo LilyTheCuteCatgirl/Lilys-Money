@@ -1,4 +1,3 @@
-// BP/scripts/commands/addmoney.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";

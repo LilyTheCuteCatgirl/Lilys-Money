@@ -21,6 +21,7 @@ import { playMoneySound } from "../players/preferences.js";
 import { isPotionItem, templateToStack, normalizeTemplate } from "../items/templates.js";
 import { isShulkerBoxId } from "../items/identifiers.js";
 
+// An offline seller can still be paid through their existing scoreboard identity.
 function sellerTarget(auction, dollars, cents) {
     const matches = (participant) => String(participant.id) === auction.sellerIdentityId;
     return (
@@ -95,8 +96,7 @@ export function buyAuction(player, auctionId) {
     );
     playMoneySound(player);
 
-    // If the seller is online, this sends instantly.
-    // If they are offline, the saved message stays queued until they reconnect.
+    // Delivery is attempted now for online sellers. Offline sellers keep their queued notice until reconnecting.
     deliverAhSoldMessagesForIdentity(a.sellerIdentityId);
 
     return "back";

@@ -37,6 +37,7 @@ export function countActivePlayerAuctions(ah, player) {
     return getPlayerAuctions(ah, player).filter((a) => a.status === "active").length;
 }
 
+// Older potion and shulker box templates lack the data needed to return the original item. Keep those listings during cleanup.
 export function retainedListing(a) {
     return isPotionItem(a.template?.typeId) || isShulkerBoxId(a.template?.typeId);
 }

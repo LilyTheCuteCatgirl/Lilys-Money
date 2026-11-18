@@ -22,7 +22,6 @@ import { getInventoryContainer } from "../inventory/items.js";
 
 const AH_PAGE_SIZE = Math.max(1, Math.floor(Number(CONFIG.AH_PAGE_SIZE ?? 20)));
 
-// =========================================================
 const AH_FULLSCREEN_UI = "§a§n§d§e§x§d§b§_§f§u§l§l§s§c§r§e§e§n§_§l§o§n§g§_§f§o§r§m§r";
 
 function ahTitle(text) {
@@ -299,7 +298,6 @@ async function openMyAhItems(player, page = 0) {
             id: a.id,
         });
     }
-    // meow might have did an eror
     if (page > 0) {
         form.button("§8§lPrevious Page", "textures/ui/arrow_left");
         actions.push({ type: "page", page: page - 1 });

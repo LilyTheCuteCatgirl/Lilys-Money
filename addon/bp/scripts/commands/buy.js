@@ -1,4 +1,3 @@
-// BP/scripts/commands/buy.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
@@ -8,12 +7,7 @@ import { getInventoryContainer, canFitExact, addExactItems } from "../modules/in
 
 import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
-/* -----------------------------
-   Target resolving (String) - supports:
-   - player name
-   - @p, @r, @s
-   Command blocks: @p picks nearest to the block.
------------------------------ */
+// For command blocks, measure @p distances from the block.
 function getRef(origin) {
     const src = getCommandSource(origin);
     if (src instanceof Player) {
@@ -78,8 +72,8 @@ function resolveTarget(origin, raw) {
         const low = s.toLowerCase();
         if (low === "@p") return nearestPlayer(ref);
         if (low === "@r") return randomPlayer();
-        if (low === "@s") return ref.self; // only works for player executor
-        return null; // keep it simple
+        if (low === "@s") return ref.self;
+        return null;
     }
 
     return findByName(s);
@@ -94,7 +88,7 @@ export function registerBuyCommand(customCommandRegistry) {
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,
             mandatoryParameters: [
-                { name: "target", type: CustomCommandParamType.String }, // IMPORTANT: string to avoid selector permission issues
+                { name: "target", type: CustomCommandParamType.String }, // Resolve targets from text to avoid selector permission checks.
                 { name: "item", type: CustomCommandParamType.ItemType },
                 { name: "amount", type: CustomCommandParamType.Integer },
                 { name: "priceEach", type: CustomCommandParamType.Float },
@@ -124,9 +118,8 @@ export function registerBuyCommand(customCommandRegistry) {
 
             const itemId = itemType.id;
 
-            // total cost = unit price * amount
             const totalCost = unitPrice * amountItems;
-            // safety vs insane numbers
+            // Keep the total within the range of exact integer arithmetic.
             if (!Number.isSafeInteger(totalCost)) {
                 return { status: CustomCommandStatus.Failure, message: "Total price is too large." };
             }
@@ -143,7 +136,6 @@ export function registerBuyCommand(customCommandRegistry) {
 
                 const bal = getBalanceCents(dollarsObj, centsObj, target);
 
-                // NO DEBT for buy
                 if (bal < totalCost) {
                     target.sendMessage(
                         "§r<§dLily's Money§r> §r" +
@@ -179,7 +171,6 @@ export function registerBuyCommand(customCommandRegistry) {
                         `§2Bought §e${amountItems}§2 x §f${itemId}§2 for §e${formatCents(totalCost)}§2. Balance: §e${formatCents(bal - totalCost)}§2.`,
                 );
 
-                // feedback to executor if player
                 reply(origin, `§aGave §e${amountItems}§a x §f${itemId}§a to §f${target.name}§a for §e${formatCents(totalCost)}§a.`);
             });
 

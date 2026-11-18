@@ -3,14 +3,14 @@ import { DEFAULT_JOBS, JOB_ICON_PRESETS } from "../defaults/jobs.js";
 import { system, world } from "@minecraft/server";
 
 const JOBS_DP_KEY_V2 = `lilymoney:jobs_v2`;
-const JOBS_DP_KEY_V1 = `lilymoney:jobs_v1`; // migration read
+const JOBS_DP_KEY_V1 = `lilymoney:jobs_v1`; // Read older worlds from this key.
 
 export const DP_MAX = 32767;
 
 const JOBS_INIT_RETRY_INTERVAL_TICKS = Math.max(1, Math.floor(Number(CONFIG.JOBS_INIT_RETRY_INTERVAL_TICKS ?? 20)));
 const JOBS_INIT_MAX_TRIES = Math.max(1, Math.floor(Number(CONFIG.JOBS_INIT_MAX_TRIES ?? 60)));
 
-let _protectedBreakIds = new Set(); // break-reward blocks that should not pay if placed by player
+let _protectedBreakIds = new Set();
 
 let JOBS_CACHE = null;
 let COMPILED = null;
@@ -110,7 +110,6 @@ function rebuildProtectedBreakIds(jobsObj) {
     }
 
     for (const j of jobsObj.jobs) {
-        // if allowPlacedBreak is TRUE, do NOT protect those blocks
         if (j.allowPlacedBreak === true) continue;
 
         const br = j.rules?.break ?? {};
@@ -120,9 +119,6 @@ function rebuildProtectedBreakIds(jobsObj) {
     _protectedBreakIds = set;
 }
 
-/* =========================================================
-   Load / Save jobs (retry-safe)
-========================================================= */
 let _jobsInitStarted = false;
 let _jobsInitIntervalId = null;
 
@@ -138,7 +134,6 @@ function clearJobsInitInterval() {
 }
 
 function tryLoadJobsFromDP() {
-    // v2
     try {
         const raw2 = world.getDynamicProperty(JOBS_DP_KEY_V2);
         if (typeof raw2 === "string" && raw2.length) {
@@ -153,7 +148,7 @@ function tryLoadJobsFromDP() {
         return false;
     }
 
-    // migrate from v1
+    // Load the older format only when the current property has no saved text.
     try {
         const raw1 = world.getDynamicProperty(JOBS_DP_KEY_V1);
         if (typeof raw1 === "string" && raw1.length) {
@@ -161,7 +156,7 @@ function tryLoadJobsFromDP() {
             JOBS_CACHE = sanitizeJobs(parsed, true);
             COMPILED = compileJobs(JOBS_CACHE);
             rebuildProtectedBreakIds(JOBS_CACHE);
-            saveJobs(JOBS_CACHE); // write to v2 once
+            saveJobs(JOBS_CACHE); // Save the migrated jobs under the current key.
             return true;
         }
     } catch {}
@@ -174,7 +169,7 @@ function initJobsStorageWithRetry() {
     _jobsInitStarted = true;
 
     let tries = 0;
-    const maxTries = JOBS_INIT_MAX_TRIES; // ~60s at 20 ticks per try
+    const maxTries = JOBS_INIT_MAX_TRIES;
 
     _jobsInitIntervalId = system.runInterval(() => {
         tries++;
@@ -185,7 +180,7 @@ function initJobsStorageWithRetry() {
         }
 
         if (tries >= maxTries) {
-            // Safety: if keys exist, DO NOT overwrite with defaults
+            // Write defaults only after confirming that neither storage key exists.
             let ids = [];
             try {
                 ids = world.getDynamicPropertyIds();
@@ -198,7 +193,6 @@ function initJobsStorageWithRetry() {
                 return;
             }
 
-            // No saved data detected -> save defaults once
             if (!JOBS_CACHE) {
                 JOBS_CACHE = deepClone(DEFAULT_JOBS);
                 COMPILED = compileJobs(JOBS_CACHE);
@@ -216,7 +210,7 @@ export function loadJobs() {
 
     initJobsStorageWithRetry();
 
-    // Use defaults in-memory while waiting (DO NOT save here)
+    // Use defaults in memory until the retry loop can check for saved jobs.
     JOBS_CACHE = deepClone(DEFAULT_JOBS);
     COMPILED = compileJobs(JOBS_CACHE);
     rebuildProtectedBreakIds(JOBS_CACHE);
@@ -224,7 +218,7 @@ export function loadJobs() {
 }
 
 function saveJobs(jobsObj) {
-    // IMPORTANT: once we save, never let the retry-init overwrite anything
+    // Stop startup retries before saving so they cannot replace these edits.
     _jobsInitStarted = true;
     clearJobsInitInterval();
 
@@ -235,7 +229,7 @@ function saveJobs(jobsObj) {
 
         world.setDynamicProperty(JOBS_DP_KEY_V2, json);
 
-        // verify read-back (debug protection)
+        // Report a read-back mismatch in the Content Log.
         try {
             const back = world.getDynamicProperty(JOBS_DP_KEY_V2);
             if (back !== json) {
@@ -264,7 +258,6 @@ function cleanJobTexturePath(raw) {
     const s = String(raw ?? "").trim();
     if (!s) return DEFAULT_JOB_ICON;
 
-    // Keep it simple: texture paths should not include .png
     return s.replace(/\.png$/i, "");
 }
 
@@ -303,7 +296,7 @@ function saveJobsAllowEmpty(jobsObj) {
     clearJobsInitInterval();
 
     try {
-        const clean = sanitizeJobs(jobsObj, true); // <-- allowEmpty = true
+        const clean = sanitizeJobs(jobsObj, true); // Allow a deliberately empty job list.
         const json = JSON.stringify(clean);
         if (json.length > DP_MAX) return false;
 

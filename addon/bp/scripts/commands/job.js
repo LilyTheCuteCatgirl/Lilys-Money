@@ -20,7 +20,6 @@ export function registerJobCommand(customCommandRegistry) {
         },
     );
 
-    // optional chat shortcut "/job"
     try {
         world.beforeEvents.chatSend.subscribe((ev) => {
             const m = String(ev.message ?? "").trim();

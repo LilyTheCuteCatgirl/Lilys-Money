@@ -1,10 +1,6 @@
 const MONEY_MIN_TOTAL_CENTS = -2147483647 * 100;
 const MONEY_MAX_TOTAL_CENTS = 2147483647 * 100 + 99;
 
-/* =========================================================
-   MONEY MATH (total cents)
-========================================================= */
-
 export function clampTotalCents(totalCents) {
     const total = Math.floor(Number(totalCents) || 0);
     if (total < MONEY_MIN_TOTAL_CENTS) return MONEY_MIN_TOTAL_CENTS;
@@ -12,9 +8,6 @@ export function clampTotalCents(totalCents) {
     return total;
 }
 
-/* =========================================================
-   MONEY PARSE + FORMAT (Float -> cents)
-========================================================= */
 export function parseFloatToCents(value, allowNegative = false) {
     if (typeof value !== "number" || !Number.isFinite(value)) {
         return { ok: false, error: "Invalid number." };
@@ -45,7 +38,6 @@ export function formatCentsCompact(totalCents) {
     const sign = totalCents < 0 ? "-" : "";
     const absDollars = Math.abs(totalCents) / 100;
 
-    // under 1000: keep normal formatting (keeps cents)
     if (absDollars < 1000) return formatCents(totalCents);
 
     const units = [
@@ -64,9 +56,9 @@ export function formatCentsCompact(totalCents) {
     }
 
     let scaled = absDollars / unit.v;
-    let rounded = Math.round(scaled * 10) / 10; // 1 decimal
+    let rounded = Math.round(scaled * 10) / 10;
 
-    // handle edge like 999.95k => 1000.0k -> 1.0m
+    // Rounding can promote an amount to the next suffix.
     if (rounded >= 1000 && unit.s !== "t") {
         const nextIndex = units.findIndex((u) => u.s === unit.s) - 1;
         if (nextIndex >= 0) {
@@ -76,6 +68,6 @@ export function formatCentsCompact(totalCents) {
         }
     }
 
-    let num = rounded.toFixed(1).replace(/\.0$/, ""); // remove trailing .0
+    let num = rounded.toFixed(1).replace(/\.0$/, "");
     return `${sign}$${num}${unit.s}`;
 }

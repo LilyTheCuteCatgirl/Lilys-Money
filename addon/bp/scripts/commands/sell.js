@@ -1,4 +1,3 @@
-// BP/scripts/commands/sell.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
@@ -7,7 +6,6 @@ import { isAdminOrCommandBlock, getCommandSource, reply } from "../modules/comma
 import { getInventoryContainer, countItems, removeItems } from "../modules/inventory/items.js";
 import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
-// Same resolver as /buy (kept local for now)
 function getRef(origin) {
     const src = getCommandSource(origin);
     if (src instanceof Player) return { dimId: src.dimension.id, loc: src.location, self: src };
@@ -80,7 +78,7 @@ export function registerSellCommand(customCommandRegistry) {
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,
             mandatoryParameters: [
-                { name: "target", type: CustomCommandParamType.String }, // IMPORTANT: string
+                { name: "target", type: CustomCommandParamType.String }, // Resolve targets from text to avoid selector permission checks.
                 { name: "item", type: CustomCommandParamType.ItemType },
                 { name: "amount", type: CustomCommandParamType.Integer },
                 { name: "priceEach", type: CustomCommandParamType.Float },

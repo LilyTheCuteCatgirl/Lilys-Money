@@ -39,7 +39,7 @@ function setVersion() {
     const parts = version.split(".").map(Number);
     if (!parts.every(Number.isSafeInteger)) throw new Error("Version numbers must be safe integers.");
 
-    // Read everything before writing anything.
+    // Read all versioned files before writing so a missing file is caught up front.
     const paths = [
         "addon/bp/manifest.json",
         "addon/rp/manifest.json",
@@ -78,7 +78,7 @@ function setVersion() {
             if (!Array.isArray(mod.version)) throw new Error(`Module without a version in ${relativePath}. No files were changed.`);
             mod.version = [...parts];
         }
-        // Only update dependencies on these two packs, never @minecraft/server(-ui).
+        // Update references between the two packs while preserving their Script API dependency versions.
         for (const dep of manifest.dependencies ?? []) {
             if (dep.uuid === bp.header.uuid || dep.uuid === rp.header.uuid) dep.version = [...parts];
         }

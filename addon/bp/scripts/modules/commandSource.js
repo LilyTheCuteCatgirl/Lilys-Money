@@ -1,9 +1,6 @@
 import { Player } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 
-/* =========================================================
-   PERMISSIONS + CHAT
-========================================================= */
 export function getCommandSource(origin) {
     return origin?.initiator ?? origin?.sourceEntity ?? null;
 }

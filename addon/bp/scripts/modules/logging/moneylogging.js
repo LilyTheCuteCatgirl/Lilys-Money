@@ -1,18 +1,4 @@
-// BP/scripts/modules/logging/moneylogging.js
-//
-// LilyMoney persistent economy history.
-//
-// IMPORTANT DESIGN RULE:
-// Gameplay files only provide the facts for an event. This module owns:
-// - the logging enabled check
-// - record IDs / timestamps / schemas
-// - active entity storage
-// - dynamic-property pages
-// - shard rotation
-// - structure persistence
-// - checksums / recovery metadata
-// - balance checkpoints
-// - logging enabled/disabled boundaries
+// Gameplay callers supply event details. This module owns the logging switch, record format, checkpoints and shard recovery.
 
 import { Player, StructureSaveMode, system, world } from "@minecraft/server";
 
@@ -22,17 +8,12 @@ import { ensureMoneyObjectives, getBalanceCents } from "../economy/balance.js";
 
 import { getAllSavedPlayerNameEntries } from "../players/nameDatabase.js";
 
-/* =========================================================
-   DATABASE CONSTANTS
-========================================================= */
-
 const WORLD_ID_DP_KEY = "lilymoney:world_id";
 
 const DB_FORMAT_VERSION = 1;
 const RECORD_FORMAT_VERSION = 1;
 
-// We proved 512 KB and 1 MB entity DPs survived structure round trips.
-// Production uses a much more conservative target.
+// Earlier structure round trips retained 512 KB and 1 MB of entity properties. The smaller target leaves room for growth.
 const SHARD_TARGET_BYTES = 256 * 1024;
 const PAGE_CHARS = 30_000;
 
@@ -44,8 +25,7 @@ const SEALED_TAG = "lilymoney_moneylog_sealed";
 const STRUCTURE_PREFIX = "lilymoney:moneylog_";
 const SHARD_DIGITS = 8;
 
-// Tiny world-level control metadata. Transaction history itself lives on the
-// storage entity / sealed structures.
+// World properties track shard state and emergency recovery. Normal history lives on the active entity and in sealed structures.
 const W_LAST_SEALED_RECORD_ID = "lilymoney:moneylog_last_sealed_record_v1";
 const W_ACTIVE_OPEN = "lilymoney:moneylog_active_open_v1";
 const W_ACTIVE_SHARD_INDEX = "lilymoney:moneylog_active_shard_v1";
@@ -56,7 +36,6 @@ const W_DEATH_RECOVERY_PAGE_PREFIX = "lilymoney:moneylog_death_recovery_page_";
 
 const W_DEAD_ENTITY_QUARANTINE = "lilymoney:moneylog_dead_entity_quarantine_v1";
 
-// Entity metadata.
 const E_DB_FORMAT = "lilymoney:db_format";
 const E_RECORD_FORMAT = "lilymoney:record_format";
 const E_KIND = "lilymoney:db_kind";
@@ -79,11 +58,10 @@ const E_JOB_BATCH_STATE = "lilymoney:job_batch_state_v1";
 
 const JOB_BATCH_WINDOW_MS = 30_000;
 
-// Prevent a weird 30-second workload containing hundreds of different
-// block/entity types from turning the pending-state DP into a giant string.
+// Limit the number of reward types in one batch so the pending property stays small.
 const JOB_BATCH_STATE_MAX_CHARS = 24_000;
 
-// Public event names. Keep these stable once real history exists.
+// These event names are part of the saved history format.
 export const MONEY_LOG_EVENT = Object.freeze({
     PAY: "PAY",
     SHOP_BUY: "SHOP_BUY",
@@ -116,7 +94,6 @@ let startupRecoveryInProgress = false;
 const quarantinedDeadStorageEntityIds = new Set();
 let deadStorageQuarantineLoaded = false;
 
-// Logging setting cache also lives here so no other module owns logging logic.
 let loggingEnabledCache = undefined;
 
 export function getMoneyLoggingEnabled() {
@@ -163,10 +140,6 @@ function setSavedMoneyLoggingEnabled(enabled) {
     }
 }
 
-/* =========================================================
-   SMALL HELPERS
-========================================================= */
-
 function cleanText(value) {
     return String(value ?? "")
         .replace(/§./g, "")
@@ -178,9 +151,7 @@ function errorText(error) {
     const message = String(error?.message ?? "").trim();
     const stack = String(error?.stack ?? "").trim();
 
-    // Some Bedrock EngineError stacks contain only frames and omit the actual
-    // message. Preserve both whenever possible so future storage failures are
-    // diagnosable from Content Log without guessing from a line number.
+    // Some engine errors have stack frames without a message. Include both in the Content Log.
     if (message && stack && !stack.includes(message)) {
         return `${message} | ${stack}`;
     }
@@ -294,10 +265,6 @@ function getScoreMap(objective) {
     return map;
 }
 
-/* =========================================================
-   WORLD ID
-========================================================= */
-
 function generateWorldId() {
     const timePart = Date.now().toString();
     const randomPart = Math.floor(Math.random() * 1_000_000_000)
@@ -330,10 +297,6 @@ export function getLilyMoneyWorldId() {
         return null;
     }
 }
-
-/* =========================================================
-   SHARD DISCOVERY / STORAGE ENTITY
-========================================================= */
 
 function shardId(index) {
     return `${STRUCTURE_PREFIX}${String(index).padStart(SHARD_DIGITS, "0")}`;
@@ -382,10 +345,7 @@ function findSafeStorageLocation(dimension, position) {
     const baseY = Math.floor(p.y);
     const baseZ = Math.floor(p.z);
 
-    // Find a real air block close to the anchor. This is used both for initial
-    // creation and for the pre-seal relocation, so structure capture always
-    // happens in an area that is already loaded around an online player (or the
-    // just-departed player's last loaded position).
+    // Use air near a loaded player position for shard creation and capture. The last player to leave can supply the anchor.
     const verticalOffsets = [2, 3, 4, 5, 6, 1, 0, -1, -2, -3, -4, -5, -6];
     const horizontalOffsets = [
         [0, 0],
@@ -419,7 +379,7 @@ function findSafeStorageLocation(dimension, position) {
         }
     }
 
-    // Same conservative fallback that passed the destructive recovery test.
+    // Fall back to the offset used by the recovery test when no air block was found.
     return { x: p.x, y: p.y + 6, z: p.z };
 }
 
@@ -483,10 +443,7 @@ function relocateStorageForSeal(entity, anchor) {
     const dz = oldLocation ? oldLocation.z - target.z : Infinity;
     const distanceSq = dx * dx + dy * dy + dz * dz;
 
-    // If the entity is already close to this loaded anchor, do not move it just
-    // for the sake of moving it. Otherwise relocate immediately before the
-    // structure save. TeleportOptions.dimension also supports cross-dimension
-    // moves, which matters when the event that fills a shard happens elsewhere.
+    // Move the shard near the capture point only when needed. The player anchoring the save may be in another dimension.
     if (oldDimensionId === newDimensionId && distanceSq <= 32 * 32) {
         return false;
     }
@@ -558,8 +515,7 @@ function loadDeadStorageQuarantine() {
 
         deadStorageQuarantineLoaded = true;
     } catch (e) {
-        // Keep this retryable. If world DP access was temporarily unavailable,
-        // a later discovery/recovery call can try again.
+        // Leave discovery retryable when the world property is temporarily unavailable.
         dbWarn(`Could not load dead storage entity quarantine: ${errorText(e)}`);
     }
 }
@@ -590,9 +546,7 @@ function quarantineDeadStorageEntityId(entityId) {
     try {
         saveDeadStorageQuarantine();
     } catch (e) {
-        // Roll back the in-memory addition if the durable safety marker could not
-        // be written. The caller can then safety-block instead of relying on a
-        // quarantine that would disappear after a process restart.
+        // Undo the local quarantine if its marker could not be saved. Recovery must be able to identify the same entity after restart.
         quarantinedDeadStorageEntityIds.delete(id);
         throw new Error(`Could not persist dead storage entity quarantine for ${id}: ${errorText(e)}`);
     }
@@ -613,8 +567,7 @@ function releaseDeadStorageEntityId(entityId) {
     try {
         saveDeadStorageQuarantine();
     } catch (e) {
-        // A stale quarantine is much safer than accidentally treating a corpse as
-        // live. Restore the in-memory marker if persistence cleanup fails.
+        // Keep the ID quarantined if its removal cannot be persisted.
         quarantinedDeadStorageEntityIds.add(id);
         dbWarn(`Could not clear dead storage entity quarantine for ${id}: ${errorText(e)}`);
         return false;
@@ -649,10 +602,7 @@ function findLoadedStorageEntities() {
 
             for (const entity of entities) {
                 try {
-                    // entityDie fires before Bedrock necessarily removes the dead entity
-                    // from dimension queries. A known dead storage ID can therefore
-                    // remain queryable for several seconds. Ignore only IDs that were
-                    // explicitly captured from our own entityDie recovery path.
+                    // A dead storage entity can still appear in dimension queries. Ignore IDs recorded by the death handler.
                     if (isDeadStorageEntityQuarantined(entity)) continue;
 
                     if (entity.getDynamicProperty(E_KIND) !== "money_history") continue;
@@ -715,8 +665,7 @@ function recoverLoadedStorageState() {
                 continue;
             }
 
-            // Crash-recovery case: structure was successfully created but the live
-            // entity had not yet been removed.
+            // A crash can leave the live entity behind after the structure was saved.
             if (sealed && id && worldStructures.has(id)) {
                 const lastId = entity.getDynamicProperty(E_LAST_RECORD_ID);
                 if (typeof lastId === "number" && Number.isSafeInteger(lastId)) {
@@ -732,8 +681,7 @@ function recoverLoadedStorageState() {
                 continue;
             }
 
-            // If sealing was marked but structure creation did not finish, restore
-            // the entity to writable state rather than losing it.
+            // If sealing was interrupted before a structure was created, reopen the original entity for writes.
             if (sealed && (!id || !worldStructures.has(id))) {
                 entity.setDynamicProperty(E_SEALED, false);
                 entity.setDynamicProperty(E_CHECKSUM, undefined);
@@ -751,7 +699,6 @@ function recoverLoadedStorageState() {
             }
         } catch {}
     }
-    // meow test
     if (active.length > 1) {
         safetyBlocked = true;
         forgetActiveEntity();
@@ -817,8 +764,7 @@ function createActiveShard(player) {
     entity.addTag(STORAGE_TAG);
     entity.addTag(ACTIVE_TAG);
 
-    // The custom entity has no gravity/collision and ticks its own area. Keep
-    // invisibility as an extra client-side precaution if it has a renderer.
+    // Keep the storage entity invisible if a client supplies a renderer.
     try {
         entity.addEffect("invisibility", 20_000_000, {
             amplifier: 0,
@@ -866,8 +812,7 @@ function ensureActiveShard(anchorPlayer = null) {
     const entity = recoverLoadedStorageState();
     if (entity?.isValid) return entity;
 
-    // If metadata says an active entity exists but it is not currently loaded,
-    // never silently create a second history branch.
+    // Creating a replacement here could split history if the original entity is merely unloaded.
     if (world.getDynamicProperty(W_ACTIVE_OPEN) === true) {
         safetyBlocked = true;
         dbWarn(
@@ -882,10 +827,6 @@ function ensureActiveShard(anchorPlayer = null) {
     if (!(player instanceof Player)) return undefined;
     return createActiveShard(player);
 }
-
-/* =========================================================
-   PAGE STORAGE / CHECKSUM / SEALING
-========================================================= */
 
 function pageKey(index) {
     return `${E_PAGE_PREFIX}${index}`;
@@ -1082,9 +1023,6 @@ function clearEmergencyDeathSnapshot() {
         }
     } catch {}
 
-    /*
-     * Clear the known pages from the current backup.
-     */
     for (let i = 0; i < pageCount; i++) {
         try {
             world.setDynamicProperty(emergencyRecoveryPageKey(i), undefined);
@@ -1113,12 +1051,7 @@ function persistEmergencyDeathSnapshot(snapshot) {
         throw new Error("Death-recovery snapshot page count does not match captured pages.");
     }
 
-    /*
-     * Remove page properties from the metadata copy.
-     *
-     * The pages themselves are stored as separate world DPs. Otherwise we'd
-     * duplicate ~256 KiB into one giant JSON string.
-     */
+    // Keep page data in separate world properties so the metadata does not duplicate the whole shard.
     const metadataProperties = [];
 
     for (const [key, value] of snapshot.properties ?? []) {
@@ -1129,12 +1062,7 @@ function persistEmergencyDeathSnapshot(snapshot) {
         metadataProperties.push([key, value]);
     }
 
-    /*
-     * Write pages FIRST.
-     *
-     * W_DEATH_RECOVERY_META is effectively the commit marker. Startup must
-     * never consider the backup valid until every page has been written.
-     */
+    // Publish the recovery metadata last. It marks the backup as ready after all pages have been written.
     for (let i = 0; i < snapshot.pages.length; i++) {
         const page = snapshot.pages[i];
 
@@ -1229,10 +1157,7 @@ function loadEmergencyDeathSnapshot() {
         throw new Error(`Emergency death snapshot checksum mismatch: ` + `expected ${meta.checksum}, got ${checksum}.`);
     }
 
-    /*
-     * Recreate the normal snapshot.properties array expected by
-     * restoreDeadActiveShard().
-     */
+    // Restore the property list expected by the shard recovery code.
     const properties = [...meta.properties];
 
     for (let i = 0; i < pages.length; i++) {
@@ -1287,9 +1212,7 @@ function cleanStaleEmergencySnapshotIfSafe() {
         const raw = world.getDynamicProperty(W_DEATH_RECOVERY_META);
         if (typeof raw !== "string" || raw.length === 0) return;
 
-        // If metadata says there is no active shard, an emergency death backup
-        // cannot still be authoritative. This also cleans the tiny crash window
-        // after an empty recovered shard was removed but before its backup cleared.
+        // Once the shard is closed, its emergency backup is stale even if cleanup was interrupted.
         if (world.getDynamicProperty(W_ACTIVE_OPEN) !== true) {
             clearEmergencyDeathSnapshot();
             dbInfo("Removed stale emergency death snapshot because no active shard is open.");
@@ -1300,8 +1223,7 @@ function cleanStaleEmergencySnapshotIfSafe() {
         try {
             meta = JSON.parse(raw);
         } catch {
-            // Keep malformed data while an active shard is expected. The normal
-            // startup safety path will report it instead of deleting evidence.
+            // Preserve malformed backup data while an active shard is expected so recovery can report the damage.
             return;
         }
 
@@ -1313,14 +1235,12 @@ function cleanStaleEmergencySnapshotIfSafe() {
             dbInfo(`Removed stale emergency death snapshot because ${structureId} is already archived.`);
         }
     } catch {
-        // Never turn cleanup into a startup failure. A questionable backup is left
-        // intact for the actual recovery/safety code to validate later.
+        // Leave questionable backups for recovery to validate without interrupting startup cleanup.
     }
 }
 
 function captureDeadActiveShard(deadEntity) {
-    // This is intentionally synchronous inside entityDie. Bedrock was tested to
-    // keep dynamic properties readable on event.deadEntity after /kill @e.
+    // Read the dying entity's properties inside its death event while the snapshot is still accessible.
     const kind = deadEntity.getDynamicProperty(E_KIND);
     const sealed = deadEntity.getDynamicProperty(E_SEALED) === true;
 
@@ -1334,9 +1254,7 @@ function captureDeadActiveShard(deadEntity) {
         throw new Error(`Dead money shard metadata invalid: shard=${shardIndex}, records=${recordCount}, pages=${pageCount}`);
     }
 
-    // Keep this explicit: this is the same access pattern that passed the v4
-    // destructive test, rather than depending on dynamic-property enumeration
-    // behavior on a dead entity.
+    // Read the known shard properties explicitly instead of relying on property enumeration after death.
     const metadataKeys = [
         E_DB_FORMAT,
         E_RECORD_FORMAT,
@@ -1372,10 +1290,7 @@ function captureDeadActiveShard(deadEntity) {
         }
         pages.push(value);
 
-        // IMPORTANT: the v4 death-recovery experiment proved that the safest
-        // restore path is to include the page DPs in the same captured property
-        // list as the shard metadata. The production port originally captured
-        // pages separately for checksumming but forgot to restore them.
+        // Include page properties in the restore list as well as the checksum input. Recovery needs the actual page contents.
         properties.push([key, value]);
     }
 
@@ -1444,8 +1359,7 @@ function verifyRecoveredActiveShard(entity, snapshot) {
     }
 
     for (const [key, expected] of snapshot.properties) {
-        // These are deliberately reset so the recovered copy is writable long
-        // enough to be verified and sealed normally.
+        // Reopen the recovered copy for verification and sealing.
         if (key === E_CHECKSUM || key === E_SEALED_AT || key === E_SEALED) continue;
 
         const actual = entity.getDynamicProperty(key);
@@ -1477,13 +1391,7 @@ function restoreDeadActiveShard(snapshot, onSuccess = null) {
     let recoveryEntity;
 
     try {
-        /*
-         * entityDie and entityRemove are separate lifecycle moments in Bedrock.
-         * The exact dead entity can stay queryable for several seconds after its
-         * death event. The entityDie handler (or startup emergency-snapshot
-         * priming) has already quarantined that exact runtime ID, so normal
-         * discovery below sees only genuinely live/different storage entities.
-         */
+        // Death and removal are separate events. Quarantine the dead runtime ID so discovery can still detect a different live shard.
         const existing = findLoadedStorageEntities().filter((entity) => {
             try {
                 return entity.getDynamicProperty(E_SEALED) !== true;
@@ -1502,9 +1410,7 @@ function restoreDeadActiveShard(snapshot, onSuccess = null) {
         let dimension = world.getDimension(normalizeDimensionIdForLookup(snapshot.dimensionId));
         let restoreLocation = snapshot.location;
 
-        // If the old entity died from an unsafe environment, respawning at the
-        // exact same coordinate can create an infinite death/recovery loop. When
-        // a player is available, choose a verified air block near that player.
+        // Prefer air near a player so the replacement avoids the hazard that killed the original entity.
         const recoveryAnchor = world.getAllPlayers()[0];
         if (recoveryAnchor instanceof Player) {
             dimension = recoveryAnchor.dimension;
@@ -1556,12 +1462,10 @@ function restoreDeadActiveShard(snapshot, onSuccess = null) {
                 `checksum=${verify.checksum}, DP bytes=${verify.reportedBytes.toLocaleString()}.`,
         );
 
-        // Archive the recovered shard immediately. Pending 30-second JOB state is
-        // flushed by sealActiveShard() before the structure is created.
+        // Seal the recovered shard immediately. Sealing flushes pending job rewards before capturing the structure.
         const sealed = sealActiveShard(entity, false, null);
 
-        // The captured shard is now either archived or safely handled as empty.
-        // Only now is the emergency copy no longer needed.
+        // Release the backup only after the recovered shard has been archived or handled as empty.
         clearEmergencyDeathSnapshot();
 
         dbInfo(`DEATH RECOVERY SEALED: recovered shard ${snapshot.shardIndex} archived as ` + `${sealed.structureId ?? "empty"}.`);
@@ -1594,10 +1498,7 @@ function restoreDeadActiveShard(snapshot, onSuccess = null) {
 
         return "success";
     } catch (e) {
-        // Do not leave a partially reconstructed active entity behind. If it is
-        // later killed it could otherwise look like a second recovery failure and
-        // obscure the original problem. World metadata intentionally stays open
-        // for the missing shard while safetyBlocked prevents any forked writes.
+        // Remove the partial reconstruction so its death cannot trigger a second recovery. Keep the missing shard open and block writes.
         try {
             if (recoveryEntity?.isValid) recoveryEntity.remove();
         } catch {}
@@ -1615,8 +1516,7 @@ function sealActiveShard(entity, continueRecording = false, anchorPlayer = null,
         throw new Error("Active money-log entity is not valid.");
     }
 
-    // Never archive a shard while JOB_REWARD data exists only in its
-    // persistent 30-second pending state.
+    // Flush pending job rewards before archiving so they are included in the saved history.
     if (options.skipJobBatchFlush !== true) {
         const flushed = flushPendingJobBatches(entity, anchorPlayer, "before_seal", { rotateAfter: false });
 
@@ -1646,11 +1546,7 @@ function sealActiveShard(entity, continueRecording = false, anchorPlayer = null,
         return { empty: true, saved: false };
     }
 
-    // StructureManager.createFromWorld reads the entity from its current world
-    // location. If the shard was created where somebody first joined and players
-    // later travelled far away, that old capture area may no longer be suitable
-    // for an immediate structure save. Move the *single* active entity beside
-    // the current event/leave anchor immediately before sealing.
+    // Structure capture reads the entity at its current position. Move it near the current anchor in case its original area has unloaded.
     try {
         const movedForSeal = relocateStorageForSeal(entity, anchorPlayer);
         if (movedForSeal) {
@@ -1699,7 +1595,7 @@ function sealActiveShard(entity, continueRecording = false, anchorPlayer = null,
             saveMode: StructureSaveMode.World,
         });
     } catch (e) {
-        // Keep the original entity writable if structure creation failed.
+        // Leave the original shard writable if structure creation fails.
         try {
             entity.setDynamicProperty(E_SEALED, false);
             entity.setDynamicProperty(E_CHECKSUM, undefined);
@@ -1747,7 +1643,7 @@ function sealActiveShard(entity, continueRecording = false, anchorPlayer = null,
     const firstId = entity.getDynamicProperty(E_FIRST_RECORD_ID);
     const lastId = entity.getDynamicProperty(E_LAST_RECORD_ID);
 
-    // Advance tiny control metadata only after the structure definitely exists.
+    // Advance the world metadata only after the structure exists.
     if (typeof lastId === "number" && Number.isSafeInteger(lastId)) {
         world.setDynamicProperty(W_LAST_SEALED_RECORD_ID, lastId);
     }
@@ -1784,10 +1680,6 @@ function sealActiveShard(entity, continueRecording = false, anchorPlayer = null,
         saveMs,
     };
 }
-
-/* =========================================================
-   30-SECOND JOB_REWARD BATCHING
-========================================================= */
 
 function emptyJobBatchState() {
     return {
@@ -1835,8 +1727,7 @@ function nextJobBatchId(entity, timestamp = Date.now()) {
         .toString(36)
         .padStart(7, "0");
 
-    // Don't rely on a sequence counter. A hard crash could theoretically
-    // persist a page farther than the counter DP and reuse an old ID.
+    // A crash could persist a history page ahead of a sequence counter. Avoid reusing a batch ID on restart.
     return `${shardIndex.toString(36)}:${timePart}:${randomPart}`;
 }
 
@@ -1861,19 +1752,7 @@ function persistedJobBatchIds(entity) {
 
             const payload = record[3];
 
-            // Batched JOB_REWARD payload:
-            //
-            // 0 identity
-            // 1 name
-            // 2 job
-            // 3 action
-            // 4 source
-            // 5 quantity
-            // 6 amount
-            // 7 balanceAfter
-            // 8 batchStartedAt
-            // 9 batchEndedAt
-            // 10 batchId
+            // Payload order: identity, name, job, action, source, quantity, amount, balanceAfter, batchStartedAt, batchEndedAt, batchId.
             const batchId = Array.isArray(payload) ? payload[10] : undefined;
 
             if (typeof batchId === "string" && batchId.length > 0) {
@@ -1917,9 +1796,7 @@ function buildJobBatchFlushPlan(state) {
             throw new Error(`JOB_REWARD batch balance metadata is invalid for ${player.name ?? "Unknown"}.`);
         }
 
-        // A player can mine several different things in one window.
-        // Their individual compacted records are ordered by the LAST time
-        // each source was rewarded.
+        // Within a player's batch, order each reward source by the time of its last payout.
         const rewards = [...player.rewards].sort((a, b) => {
             const byEnd = safeInteger(a?.updatedAt, 0) - safeInteger(b?.updatedAt, 0);
 
@@ -1957,16 +1834,7 @@ function buildJobBatchFlushPlan(state) {
                 throw new Error("JOB_REWARD batch running balance exceeded safe integer range.");
             }
 
-            /*
-             * IMPORTANT:
-             *
-             * The FIRST 8 values are exactly the existing DB-v1 JOB_REWARD
-             * payload format.
-             *
-             * Existing viewer versions therefore continue working.
-             *
-             * The last 3 values are optional extra batch metadata.
-             */
+            // The first eight fields preserve the DB-v1 layout for existing viewers. The three trailing fields describe the batch.
             const payload = [
                 cleanText(player.identityId),
                 cleanText(player.name),
@@ -1997,7 +1865,7 @@ function buildJobBatchFlushPlan(state) {
         }
     }
 
-    // Keep physical record timestamps ordered even with several players.
+    // Keep timestamps ordered across players as well as within each player's batch.
     planned.sort((a, b) => {
         const byTime = a.timestamp - b.timestamp;
 
@@ -2010,10 +1878,6 @@ function buildJobBatchFlushPlan(state) {
 
     return planned;
 }
-
-/* =========================================================
-   RAW RECORD APPEND
-========================================================= */
 
 function appendPersistentRecordToEntity(entity, type, payload, options = {}) {
     const countRaw = entity.getDynamicProperty(E_RECORD_COUNT);
@@ -2069,10 +1933,6 @@ function appendPersistentRecordToEntity(entity, type, payload, options = {}) {
     return true;
 }
 
-/* =========================================================
-   BATCH FLUSH
-========================================================= */
-
 function flushPendingJobBatches(entity, anchorPlayer = null, reason = "manual", options = {}) {
     if (!entity?.isValid) {
         return false;
@@ -2088,14 +1948,7 @@ function flushPendingJobBatches(entity, anchorPlayer = null, reason = "manual", 
 
     const existingIds = persistedJobBatchIds(entity);
 
-    /*
-     * IMPORTANT CRASH RULE:
-     *
-     * Do NOT clear E_JOB_BATCH_STATE before writing the real records.
-     *
-     * If Minecraft dies halfway through this loop, the pending state
-     * survives and batchId lets us detect which rows were already written.
-     */
+    // Keep the pending state until all records are written. After a crash, batch IDs identify rows already added to history.
     for (const row of plan) {
         if (existingIds.has(row.batchId)) {
             continue;
@@ -2110,7 +1963,6 @@ function flushPendingJobBatches(entity, anchorPlayer = null, reason = "manual", 
         existingIds.add(row.batchId);
     }
 
-    // Every pending row is now represented by a canonical JOB_REWARD.
     entity.setDynamicProperty(E_JOB_BATCH_STATE, undefined);
 
     if (options.rotateAfter !== false) {
@@ -2131,10 +1983,6 @@ function flushPendingJobBatches(entity, anchorPlayer = null, reason = "manual", 
 
     return true;
 }
-
-/* =========================================================
-   ADD ONE JOB REWARD TO PENDING STATE
-========================================================= */
 
 function addJobRewardToState(entity, state, payload, timestamp) {
     const [identityId, name, jobId, kind, sourceId, quantity, amountCents, balanceAfter] = payload;
@@ -2164,10 +2012,9 @@ function addJobRewardToState(entity, state, payload, timestamp) {
 
             windowStartedAt: timestamp,
 
-            // Exact balance immediately before the FIRST reward in this window.
+            // Capture the balance before the first reward in this window.
             baseBalance,
 
-            // Exact balance after the LAST reward we've received.
             finalBalance: balanceAfter,
 
             lastUpdatedAt: timestamp,
@@ -2177,21 +2024,7 @@ function addJobRewardToState(entity, state, payload, timestamp) {
 
         state.players.push(player);
     } else {
-        /*
-         * This is a really useful safety check.
-         *
-         * Example:
-         *
-         * old DB balance = $10
-         * someone manually does scoreboard +$50
-         * next Miner reward = +$0.02
-         * actual new balance = $60.02
-         *
-         * Expected would have been $10.02.
-         *
-         * We detect that here and force the old batch closed so the viewer
-         * can still see the unexplained $50 discontinuity.
-         */
+        // A score change outside the job system breaks the expected balance chain. Keep the gap visible in history.
         const previousBalance = safeInteger(player.finalBalance, null);
 
         if (previousBalance === null || previousBalance + amountCents !== balanceAfter) {
@@ -2242,10 +2075,6 @@ function addJobRewardToState(entity, state, payload, timestamp) {
     };
 }
 
-/* =========================================================
-   QUEUE JOB REWARD
-========================================================= */
-
 function queuePersistentJobReward(payload, options = {}) {
     if (!getMoneyLoggingEnabled()) {
         return false;
@@ -2269,12 +2098,7 @@ function queuePersistentJobReward(payload, options = {}) {
 
         let state = loadJobBatchState(entity);
 
-        /*
-         * The window is global to pending JOB activity.
-         *
-         * If the oldest open player's window is 30 seconds old, materialize
-         * everything and begin a fresh window.
-         */
+        // The oldest pending player's reward sets the deadline for the whole batch.
         const oldest = oldestPendingJobBatchStart(state);
 
         if (oldest !== undefined && timestamp - oldest >= JOB_BATCH_WINDOW_MS) {
@@ -2287,13 +2111,7 @@ function queuePersistentJobReward(payload, options = {}) {
 
         let result = addJobRewardToState(entity, state, payload, timestamp);
 
-        /*
-         * Something changed the player's score without the expected previous
-         * JOB_REWARD balance chain.
-         *
-         * Close the old period first, then start a new period at the actual
-         * current balance. This deliberately preserves the anomaly.
-         */
+        // Close the old batch before recording the new balance so the intervening change stays visible.
         if (result.balanceDiscontinuity) {
             flushPendingJobBatches(entity, anchor, "balance_discontinuity", {
                 rotateAfter: false,
@@ -2310,14 +2128,7 @@ function queuePersistentJobReward(payload, options = {}) {
 
         let raw = JSON.stringify(state);
 
-        /*
-         * If somebody somehow earns hundreds of different reward types in
-         * one window, don't allow the pending DP itself to become enormous.
-         *
-         * Important: the modified state above has NOT been persisted yet.
-         * loadJobBatchState(entity) therefore still returns the previous safe
-         * state.
-         */
+        // The oversized edit exists only in memory. Flush the previously saved state before starting a smaller batch.
         if (raw.length > JOB_BATCH_STATE_MAX_CHARS) {
             const previousState = loadJobBatchState(entity);
 
@@ -2342,19 +2153,10 @@ function queuePersistentJobReward(payload, options = {}) {
             }
         }
 
-        /*
-         * THIS is what makes the 30-second aggregate durable.
-         *
-         * We're still writing a DP every reward, but instead of adding another
-         * full history record/page line every block, we're updating one compact
-         * pending state.
-         */
+        // Persist the compact pending state on each reward so a block break does not need its own history row.
         entity.setDynamicProperty(E_JOB_BATCH_STATE, raw);
 
-        /*
-         * The pending state itself still counts toward entity DP size.
-         * Don't let it bypass shard rotation.
-         */
+        // Count the pending property toward the shard size limit.
         const bytes = entity.getDynamicPropertyTotalByteCount();
 
         const targetRaw = entity.getDynamicProperty(E_TARGET_BYTES);
@@ -2383,10 +2185,6 @@ function queuePersistentJobReward(payload, options = {}) {
     }
 }
 
-/* =========================================================
-   NORMAL NON-JOB RECORD APPEND
-========================================================= */
-
 function appendPersistentRecord(type, payload, options = {}) {
     if (!getMoneyLoggingEnabled()) {
         return false;
@@ -2407,12 +2205,7 @@ function appendPersistentRecord(type, payload, options = {}) {
     }
 
     try {
-        /*
-         * PAY / shop / admin / JOIN / LEAVE / checkpoints / logging markers
-         * are ordering boundaries.
-         *
-         * Finish all pending JOB summaries immediately before writing one.
-         */
+        // Flush job summaries before a transfer, session record or checkpoint so history retains the order of events.
         if (type !== MONEY_LOG_EVENT.JOB_REWARD) {
             flushPendingJobBatches(entity, anchor, `before_${type}`, {
                 rotateAfter: false,
@@ -2431,10 +2224,6 @@ function appendPersistentRecord(type, payload, options = {}) {
         return false;
     }
 }
-
-/* =========================================================
-   RECORD NORMALIZATION
-========================================================= */
 
 function normalizeMoneyEvent(type, data) {
     const amount = safeInteger(data?.amountCents, null);
@@ -2539,10 +2328,6 @@ function normalizeMoneyEvent(type, data) {
     }
 }
 
-/* =========================================================
-   PUBLIC MONEY-EVENT API
-========================================================= */
-
 export function logMoneyEvent(type, data = {}) {
     if (!getMoneyLoggingEnabled()) {
         return false;
@@ -2560,7 +2345,6 @@ export function logMoneyEvent(type, data = {}) {
 
     const anchor = getAnchorPlayer(data);
 
-    // JOB rewards use the durable 30-second batching path.
     if (type === MONEY_LOG_EVENT.JOB_REWARD) {
         return queuePersistentJobReward(payload, {
             anchorPlayer: anchor,
@@ -2573,10 +2357,6 @@ export function logMoneyEvent(type, data = {}) {
         data,
     });
 }
-
-/* =========================================================
-   BALANCE CHECKPOINTS
-========================================================= */
 
 function getAllKnownBalanceRows() {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
@@ -2637,8 +2417,7 @@ export function logFullBalanceCheckpoint(reason = "manual", anchorPlayer = null)
             return false;
         }
 
-        // Full snapshots intentionally use identityId + exact cents only.
-        // Player names already live in the shared Name Database.
+        // Checkpoints store scoreboard identity IDs and balances in cents. Names are stored separately in the name database.
         const payload = [cleanText(reason), rows.length, rows];
 
         const ok = appendPersistentRecord(MONEY_LOG_EVENT.FULL_BALANCE_CHECKPOINT, payload, { anchorPlayer: anchor });
@@ -2650,10 +2429,6 @@ export function logFullBalanceCheckpoint(reason = "manual", anchorPlayer = null)
         return false;
     }
 }
-
-/* =========================================================
-   ACTIVE STORAGE ENTITY DEATH RECOVERY
-========================================================= */
 
 try {
     world.afterEvents.entityDie.subscribe((event) => {
@@ -2724,25 +2499,12 @@ try {
                 return;
             }
 
-            /*
-             * Bedrock can keep a dead entity in getEntities() for several seconds
-             * after entityDie. Persistently quarantine this exact runtime ID before
-             * any recovery work so it can never be mistaken for a live database
-             * entity, even if Minecraft closes before the next tick.
-             */
+            // Persist the dead entity's runtime ID before recovery so discovery still ignores it after a restart.
             if (typeof snapshot.deadEntityId === "string" && snapshot.deadEntityId.length > 0) {
                 quarantineDeadStorageEntityId(snapshot.deadEntityId);
             }
 
-            /*
-             * CRITICAL:
-             *
-             * Persist the captured shard BEFORE trying to spawn its replacement.
-             *
-             * If reconstruction fails and Minecraft subsequently closes, startup can
-             * restore this exact snapshot instead of being left with W_ACTIVE_OPEN=true
-             * and no entity.
-             */
+            // Save the emergency snapshot before spawning a replacement. Startup can then retry if reconstruction fails.
             try {
                 persistEmergencyDeathSnapshot(snapshot);
             } catch (e) {
@@ -2771,8 +2533,7 @@ try {
                     `DP bytes=${snapshot.reportedBytes?.toLocaleString?.() ?? "unavailable"}.`,
             );
 
-            // /kill @e may still be iterating its target list. Rebuild on the next
-            // tick so the replacement cannot be killed by the same command pass.
+            // Rebuild next tick so a replacement cannot be caught in the same /kill command.
             system.run(() => restoreDeadActiveShard(snapshot));
         } catch (e) {
             deathRecoveryInProgress = false;
@@ -2788,12 +2549,7 @@ try {
     dbWarn(`Could not subscribe to entityDie recovery: ${errorText(e)}`);
 }
 
-/*
- * entityDie happens when the entity dies; entityRemove can happen a few
- * seconds later when Bedrock finally removes that dead entity from the game.
- * Keep the known-dead runtime ID quarantined until this authoritative removal
- * event arrives.
- */
+// Keep the runtime ID quarantined until the removal event confirms the dead entity is gone.
 try {
     world.afterEvents.entityRemove.subscribe((event) => {
         try {
@@ -2812,18 +2568,13 @@ try {
     dbWarn(`Could not subscribe to entityRemove quarantine cleanup: ${errorText(e)}`);
 }
 
-/* =========================================================
-   PLAYER SESSION RECORDS
-========================================================= */
-
 const pendingJoins = [];
 const MAX_PENDING_JOINS = 128;
 
 function queuePlayerJoinSnapshot(snapshot) {
     if (!snapshot) return;
 
-    // A join is tiny, so retaining a bounded queue while startup/death recovery
-    // finishes is cheaper and much more accurate than dropping the session start.
+    // Bound the queue of join snapshots held while storage is recovering.
     if (pendingJoins.length >= MAX_PENDING_JOINS) {
         pendingJoins.shift();
         dbWarn("PLAYER_JOIN pending queue was full; oldest queued join was dropped.");
@@ -2878,21 +2629,13 @@ export function logPlayerJoin(player) {
             timestamp: Date.now(),
         };
 
-        // Startup discovery and death recovery are intentionally allowed to take a
-        // few ticks. Capture the exact join facts now and write them once the DB is
-        // ready instead of emitting "Could not write PLAYER_JOIN" and losing the
-        // session boundary.
+        // Capture the player's balance and identity at join time, even if recovery delays the write.
         if (startupRecoveryInProgress || deathRecoveryInProgress) {
             queuePlayerJoinSnapshot(snapshot);
             return true;
         }
 
-        // playerSpawn and the delayed boot initializer can land on the same tick.
-        // If the world says a live shard exists but the boot initializer has not
-        // started its discovery retries yet, JOIN must not call ensureActiveShard()
-        // and turn that normal load race into a permanent safety block. Try one
-        // synchronous discovery, then start the normal startup retry path and keep
-        // the exact JOIN snapshot queued.
+        // A join and startup discovery can share a tick. Give the expected shard time to load before treating it as missing.
         if (world.getDynamicProperty(W_ACTIVE_OPEN) === true) {
             const loaded = recoverLoadedStorageState();
             if (!loaded?.isValid) {
@@ -2991,16 +2734,13 @@ try {
                 anchorPlayer: world.getAllPlayers()[0],
             });
         } else {
-            // Balance cannot be read safely after the player object is gone. Keep a
-            // boundary record rather than inventing a value.
+            // When the player object is gone, record the session boundary without guessing its balance.
             appendPersistentRecord(MONEY_LOG_EVENT.PLAYER_LEAVE, ["", cleanText(event.playerName), null], {
                 anchorPlayer: world.getAllPlayers()[0],
             });
         }
 
-        // Clean shutdown behavior: if nobody remains online, seal the partial
-        // shard so the next world load starts from structures instead of relying
-        // on a potentially unloaded live entity.
+        // When the last player leaves, try to seal the partial shard before its area unloads.
         if (world.getAllPlayers().length === 0) {
             const entity = recoverLoadedStorageState();
             if (entity?.isValid) {
@@ -3021,10 +2761,6 @@ try {
     });
 } catch {}
 
-/* =========================================================
-   LOGGING ON/OFF BOUNDARIES
-========================================================= */
-
 export function setMoneyLoggingEnabled(enabled, changedBy = null) {
     const next = enabled === true;
     const current = getMoneyLoggingEnabled();
@@ -3034,7 +2770,7 @@ export function setMoneyLoggingEnabled(enabled, changedBy = null) {
     const anchor = changedBy instanceof Player ? changedBy : getAnchorPlayer({ actor: changedBy });
 
     if (!next) {
-        // Still ON here, so these are the final trusted records before the gap.
+        // Record the closing boundary while logging is still enabled.
         if (!(anchor instanceof Player)) {
             dbWarn("Cannot safely disable money logging without a player anchor.");
             return false;
@@ -3076,8 +2812,7 @@ export function setMoneyLoggingEnabled(enabled, changedBy = null) {
         return true;
     }
 
-    // Enabling: flip the saved setting first so the logging functions are
-    // allowed to create/write the new active shard.
+    // Enable writes before creating the first records after the gap.
     if (!setSavedMoneyLoggingEnabled(true)) return false;
 
     try {
@@ -3116,10 +2851,6 @@ export function setMoneyLoggingEnabled(enabled, changedBy = null) {
         return false;
     }
 }
-
-/* =========================================================
-   JOB BATCH MAINTENANCE
-========================================================= */
 
 try {
     system.runInterval(() => {
@@ -3165,10 +2896,6 @@ try {
     dbWarn(`Could not start JOB_REWARD batch timer: ${errorText(e)}`);
 }
 
-/* =========================================================
-   STARTUP / MAINTENANCE
-========================================================= */
-
 function finishStartupMoneyLogging(anchor) {
     startupRecoveryInProgress = false;
 
@@ -3189,12 +2916,7 @@ function retryStartupActiveShard(anchor, attempt = 0) {
         return;
     }
 
-    /*
-     * First try the normal path.
-     *
-     * The active tick-world entity may already be loaded, or it may become
-     * queryable shortly after world startup.
-     */
+    // The active entity may take several ticks to appear in a world query.
     const loaded = recoverLoadedStorageState();
 
     if (loaded?.isValid) {
@@ -3207,32 +2929,20 @@ function retryStartupActiveShard(anchor, attempt = 0) {
         return;
     }
 
-    /*
-     * If metadata no longer says an active shard exists, there is nothing
-     * special to recover. Continue normal startup.
-     */
     if (world.getDynamicProperty(W_ACTIVE_OPEN) !== true) {
         startupRecoveryInProgress = false;
         finishStartupMoneyLogging(anchor);
         return;
     }
 
-    /*
-     * tick_world entities can take a little while to become queryable while
-     * the world/chunks are loading. Retry ~10 seconds before treating it as a
-     * genuinely missing active entity.
-     */
+    // Retry for about ten seconds at normal tick speed before starting missing-shard recovery.
     if (attempt < 40) {
         system.runTimeout(() => retryStartupActiveShard(anchor, attempt + 1), 5);
 
         return;
     }
 
-    /*
-     * Normal discovery failed. A durable entityDie snapshot is the ONLY reason
-     * we automatically reconstruct a missing active shard. Without one, the
-     * original entity might merely be in an unloaded chunk and we must stop.
-     */
+    // Reconstruct a missing shard only from a death snapshot. An unloaded shard could otherwise reappear alongside its replacement.
     try {
         const snapshot = loadEmergencyDeathSnapshot();
 
@@ -3262,9 +2972,7 @@ function retryStartupActiveShard(anchor, attempt = 0) {
             deathRecoveryInProgress = true;
             safetyBlocked = false;
 
-            // Startup continuation remains callback-based so the checkpoint only
-            // runs after reconstruction, verification, sealing, and fresh-shard
-            // creation have all completed successfully.
+            // Run the startup checkpoint only after reconstruction, verification, sealing and creation of the next shard succeed.
             restoreDeadActiveShard(snapshot, () => {
                 const checkpointAnchor = anchor instanceof Player ? anchor : world.getAllPlayers()[0];
 
@@ -3317,12 +3025,7 @@ export function initializeMoneyLogging() {
     cleanStaleEmergencySnapshotIfSafe();
 
     try {
-        /*
-         * Backward/startup safety: if a previous entityDie already left a valid
-         * emergency snapshot, quarantine its known dead runtime ID BEFORE normal
-         * storage discovery. Otherwise a corpse that survived into startup could
-         * be mistaken for the live active shard.
-         */
+        // Quarantine the runtime ID from any saved death snapshot before the first startup query can find the dead entity.
         primeDeadStorageQuarantineFromEmergencySnapshot();
     } catch (e) {
         safetyBlocked = true;

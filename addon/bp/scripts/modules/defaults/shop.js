@@ -1,5 +1,4 @@
-// Shop prices are stored in cents.
-// Example: 500 = $5.00
+// Shop prices use cents. A price of 500 costs $5.00.
 
 export const SHOP_CATEGORY_ICON_PRESETS = Object.freeze([
     { name: "Page / Default", texture: "textures/ui/page" },
@@ -590,7 +589,7 @@ export const DEFAULT_SHOP = Object.freeze({
                 { id: "minecraft:conduit", buy: 30000, sell: 6000, allowBuy: true, allowSell: true },
                 { id: "minecraft:nether_star", buy: 75000, sell: 20000, allowBuy: true, allowSell: true },
                 { id: "minecraft:heavy_core", buy: 30000, sell: 5000, allowBuy: true, allowSell: true },
-                { id: "minecraft:echo_shard", buy: 1000, sell: 1000, allowBuy: true, allowSell: true }, //is kind of like a curency in items since i put the sell and buy price at 10 this one doesnt really feel like its worth 10 but its just for the curency meow
+                { id: "minecraft:echo_shard", buy: 1000, sell: 1000, allowBuy: true, allowSell: true }, // Matching buy and sell prices let players use echo shards as currency.
                 { id: "minecraft:recovery_compass", buy: 25000, sell: 2500, allowBuy: true, allowSell: true },
                 { id: "minecraft:trial_key", buy: 10000, sell: 500, allowBuy: true, allowSell: true },
                 { id: "minecraft:ominous_trial_key", buy: 25000, sell: 1000, allowBuy: true, allowSell: true },

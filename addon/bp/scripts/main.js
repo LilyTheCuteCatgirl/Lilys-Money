@@ -1,4 +1,3 @@
-// BP/scripts/main.js
 import { system, world } from "@minecraft/server";
 import "./modules/ui/8crafterUiAuto.js";
 
@@ -36,11 +35,6 @@ import { registerAhCommand } from "./commands/ah.js";
 
 import { initializeMoneyLogging, logPlayerJoin } from "./modules/logging/moneylogging.js";
 
-/* =========================================================
-   Spawn / first-join setup
-   Kept as one handler so join spikes are much smaller on SMPs.
-========================================================= */
-
 function configTicks(key, fallback) {
     const n = Math.floor(Number(CONFIG[key] ?? fallback));
     return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -65,9 +59,7 @@ function addZeroToJoiningPlayer(player) {
         }
     } catch {}
 
-    // Brand-new players may not have a scoreboardIdentity yet.
-    // "scoreboard players add <player> <objective> 0" creates their entry
-    // without changing an existing score.
+    // A new player may lack a scoreboard identity. Adding zero by name creates an entry while preserving any existing score.
     try {
         const name = String(player?.name ?? "").replace(/"/g, '\\"');
         if (!name) return false;
@@ -110,7 +102,6 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     const player = ev.player;
     rememberPlayerName(player);
 
-    // Small welcome message. Delayed so it does not fight spawn loading.
     system.runTimeout(
         () => {
             try {
@@ -122,7 +113,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         configTicks("WELCOME_MESSAGE_DELAY_TICKS", 20),
     );
 
-    // Name saving is batched inside nameDatabase.js now.
+    // Retry after spawn in case the player's scoreboard identity was unavailable on the first attempt.
     system.runTimeout(
         () => {
             try {
@@ -132,22 +123,18 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         configTicks("NAME_SAVE_JOIN_DELAY_TICKS", 20),
     );
 
-    // Init scoreboard entries and starting money without scoreboard commands.
     system.runTimeout(
         () => {
             try {
                 addZeroToJoiningPlayer(player);
                 giveStartMoneyIfNeeded(player);
 
-                // Update the existing shared Name Database in RAM before the session
-                // record/full checkpoint can reference this identity. Its normal save
-                // batching behavior remains unchanged.
+                // Cache the name before the join record or a checkpoint can refer to this identity.
                 try {
                     rememberPlayerName(player);
                 } catch {}
 
-                // Exact session-start balance. moneylogging.js owns persistence and
-                // immediately returns without writing anything when logging is OFF.
+                // Record the balance after starting money has been applied. The logger checks whether recording is enabled.
                 logPlayerJoin(player);
             } catch {}
         },
@@ -155,9 +142,6 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     );
 });
 
-/* =========================================================
-   BOOT: create objectives + init players + normalize cents
-========================================================= */
 system.runTimeout(
     () => {
         ensureMoneyObjectives();
@@ -214,9 +198,6 @@ const scoreboardFallbackRun = system.runInterval(
     configTicks("SCOREBOARD_ZERO_FALLBACK_INTERVAL_TICKS", 200),
 );
 
-/* =========================================================
-   Money display
-========================================================= */
 system.runInterval(() => {
     tickMoneyDisplay();
 }, CONFIG.MONEY_DISPLAY_UPDATE_TICKS);
@@ -230,9 +211,6 @@ world.afterEvents.playerLeave.subscribe((ev) => {
     } catch {}
 });
 
-/* =========================================================
-   COMMAND REGISTRATION
-========================================================= */
 system.beforeEvents.startup.subscribe(({ customCommandRegistry }) => {
     registerBalanceCommands(customCommandRegistry);
     registerSetMoneyCommand(customCommandRegistry);

@@ -60,7 +60,7 @@ export function destinationPaths(mcRoot) {
     };
 }
 
-/** Deliberately REPLACES the designated Lily's Money development folder, even if it already exists. */
+/** Replace the designated development pack directory, including any files from an older installation. */
 export function replaceDevelopmentPack(source, destination, type) {
     const expectedParent = type === "bp" ? "development_behavior_packs" : "development_resource_packs";
     const expectedName = type === "bp" ? BP_FOLDER_NAME : RP_FOLDER_NAME;
@@ -71,13 +71,12 @@ export function replaceDevelopmentPack(source, destination, type) {
         throw new Error(`Source ${type} pack is incomplete: ${source}`);
     }
     fs.mkdirSync(path.dirname(destination), { recursive: true });
-    // The user explicitly wants existing copies replaced, including older unmanaged copies.
     fs.rmSync(destination, { recursive: true, force: true, maxRetries: 2, retryDelay: 200 });
     fs.cpSync(source, destination, { recursive: true, force: true });
 }
 
 export function syncDevelopmentPacks(mcRoot) {
-    // Do all preflight checks BEFORE deleting an existing development pack.
+    // Validate both source packs before removing either installed copy.
     validateProject();
     if (!fs.existsSync(mcRoot) || !fs.statSync(mcRoot).isDirectory()) {
         throw new Error(

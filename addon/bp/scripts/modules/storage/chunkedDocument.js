@@ -128,6 +128,7 @@ export function createDocumentStore(base, version, { initial, empty, decode, leg
         try {
             refresh();
             current(draft);
+            // A menu revision only tracks local edits. Compare the saved bytes too before replacing them.
             const disk = readDocument(base, version);
             if (disk.raw !== source.raw || disk.meta !== source.meta) {
                 source = undefined;
@@ -155,6 +156,7 @@ export function createDocumentStore(base, version, { initial, empty, decode, leg
                 try {
                     world.setDynamicProperty(key, value);
                 } catch (rollback) {
+                    // A partial rollback leaves the stored document uncertain. Pause writes to preserve what remains.
                     blocked = true;
                     console.warn(`[${base}] Rollback failed for ${key}: ${rollback}`);
                 }

@@ -18,8 +18,6 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     }, 60);
 });
 
-// =========================================================
-
 function nextSoldMessageId(ah) {
     const n = Math.max(1, Math.floor(Number(ah.nextSoldMessageId ?? 1)));
     ah.nextSoldMessageId = n + 1;

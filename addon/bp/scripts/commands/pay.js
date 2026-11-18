@@ -1,4 +1,3 @@
-// BP/scripts/commands/pay.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
 import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";

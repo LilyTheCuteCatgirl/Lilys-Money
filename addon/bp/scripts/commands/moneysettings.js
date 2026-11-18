@@ -1,4 +1,3 @@
-// BP/scripts/commands/moneysettings.js
 import { CommandPermissionLevel, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
@@ -135,7 +134,6 @@ async function openAdminSettings(player) {
         }
     }
 
-    // Save global scoreboard displays
     const nextGlobal = setMoneyDisplaySettings({
         sidebar,
         belowname,
@@ -149,14 +147,12 @@ async function openAdminSettings(player) {
         recreateMoneyDisplayObjectiveIfNeeded();
     }
 
-    // Save default player settings
     setMoneyPersonalDefaults({
         actionbar: defaultActionbar,
         sound: defaultSound,
         compact: defaultCompact,
     });
 
-    // Save global start money
     const startNum = Number(startRaw.replace(",", "."));
 
     if (Number.isFinite(startNum) && startNum >= 0) {

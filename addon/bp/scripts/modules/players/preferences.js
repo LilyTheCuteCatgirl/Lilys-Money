@@ -127,7 +127,7 @@ export function playMoneySound(player) {
     try {
         if (!hasMoneySound(player)) return;
 
-        // Prefer the Script API sound call. Commands are noticeably heavier on SMPs.
+        // Try the sound API first to avoid running a command for each payment.
         try {
             if (typeof player.playSound === "function") {
                 player.playSound("random.orb", { volume: 1, pitch: 1 });

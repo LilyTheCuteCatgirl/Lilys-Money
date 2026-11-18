@@ -1,4 +1,3 @@
-// BP/scripts/commands/balancetop.js
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getScoreSafe } from "../modules/economy/balance.js";
@@ -48,8 +47,8 @@ function handleTopMoney(origin, pageArg) {
             p2 = centsObj.getParticipants();
         } catch {}
 
-        // Key by identity.id when possible, fallback to displayName
-        const ids = new Map(); // key -> identity
+        // Use the scoreboard ID when available so renamed participants keep one entry.
+        const ids = new Map();
         for (const ident of p1) ids.set(String(ident?.id ?? ident?.displayName ?? Math.random()), ident);
         for (const ident of p2) ids.set(String(ident?.id ?? ident?.displayName ?? Math.random()), ident);
 

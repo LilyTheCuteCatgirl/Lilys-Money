@@ -13,7 +13,7 @@ function parseArgs(argv) {
     return options;
 }
 
-/** Content fingerprint avoids duplicate syncs caused by duplicate or noisy filesystem events. */
+// Compare pack contents because one save can produce several filesystem events.
 function fileFingerprint() {
     const hash = crypto.createHash("sha256");
     function visit(dir) {
@@ -47,7 +47,7 @@ try {
             console.log(`Synced BP + RP (${new Date().toLocaleTimeString()})`);
             return destinations;
         } catch (error) {
-            // No retry loop or automatic log spam; next saved change will trigger another attempt.
+            // The next source change can retry a failed sync.
             console.error(`Sync failed: ${error.message}`);
         }
     }
@@ -56,13 +56,13 @@ try {
         timer = setTimeout(synchronize, 350);
     }
 
-    // Watch ONLY addon/; syncing into AppData can't trigger a source change.
+    // Watch the source packs so writes to the deployment folders cannot trigger another sync.
     watcher = fs.watch(ADDON, { recursive: true }, scheduleSync);
     watcher.on("error", (error) => console.error(`Watch error: ${error.message}`));
     console.log(`Watching ${ADDON}`);
     console.log(`Minecraft: ${mcRoot}`);
     console.log("Existing Lily's Money development packs will be replaced. Stop with Ctrl+C.");
-    synchronize(); // Initial copy once, then only when actual source contents change.
+    synchronize();
 } catch (error) {
     console.error(`Watch failed: ${error.message}`);
     process.exitCode = 1;

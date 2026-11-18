@@ -240,7 +240,7 @@ export function templateToStack(template, amount = 1) {
                         level: e.level,
                     });
                 } catch {
-                    // Minecraft rejected it, so skip it.
+                    // The round-trip check below rejects a stack that lost an enchantment.
                 }
             }
         }
