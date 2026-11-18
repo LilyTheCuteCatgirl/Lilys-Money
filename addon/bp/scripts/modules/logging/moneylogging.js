@@ -1925,7 +1925,7 @@ function appendPersistentRecordToEntity(entity, type, payload, options = {}) {
     return true;
 }
 
-function flushPendingJobBatches(entity, anchorPlayer = null, options = {}) {
+function flushPendingJobBatches(entity, anchorPlayer = null, _reason = "manual", options = {}) {
     if (!entity?.isValid) {
         return false;
     }
