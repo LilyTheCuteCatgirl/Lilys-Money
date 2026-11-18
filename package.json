@@ -1,6 +1,6 @@
 {
   "name": "lilys-money",
-  "version": "3.4.2",
+  "version": "3.4.3",
   "private": true,
   "type": "module",
   "description": "Developer tools for the Lily's Money Minecraft Bedrock add-on",

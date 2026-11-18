@@ -83,6 +83,7 @@ export const CONFIG = Object.freeze({
     // Ticks between saves of buffered job statistics. A longer interval leaves recent changes in memory longer.
     JOB_STATS_FLUSH_INTERVAL_TICKS: 400,
 
+    //_____________________________________________________________________________________________________________________________________
     // Internal identifiers
     // Leave these property keys, objective IDs and player tags unchanged in existing worlds.
     // The add-on uses them to find saved balances, names and preferences.
