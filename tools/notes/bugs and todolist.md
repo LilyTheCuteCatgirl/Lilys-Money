@@ -23,12 +23,20 @@ adding options
 
 # later planned ideas:
 
-- shop presets (presets where you can chose beetween diferant presets like for exemple donutsmp shop, lilysmoney default shop, skygen specialised shop, pvp kit shop...)
-- /order system
-- /bounty system 
-- /payrequest (ask for money to a player and they can either put /payrequest accept or /payrequest deny and if they have multiple people asking for pay requests they can use /payrequest deny <player name>)
-- job presets (more jobs with presets where you can chose the presets for exemple lilys  money default jobs, extended jobs, diversity jobs.. DIFERANCE FROM SHOPPRESETS: unlike the shop presets these could co exist lets say we have the default jobs it adds all the default jobs to your current available jobs and then you also import diversity jobs and it would ADD the jobs in this preset whiout removing the default ones OR if 2 jobs have the same name it will overwrite the job that was there before for exemple if the default has Miner job and you added extended jobs it with a job named miner too but with more blocks that will reward you the default miner will be overwritten)
+- shop presets 
+    presets where you can chose beetween diferant presets like for exemple donutsmp shop, lilysmoney default shop, skygen specialised shop, pvp kit shop...
 
+- /order system
+
+- /bounty system 
+
+- /payrequest 
+    ask for money to a player and they can either put /payrequest accept or /payrequest deny and if they have multiple people asking for pay requests they can use /payrequest deny <player name>
+
+- job presets 
+    more jobs with presets where you can chose the presets for exemple lilys  money default jobs, extended jobs, diversity jobs.. DIFERANCE FROM SHOPPRESETS: unlike the shop presets these could co exist lets say we have the default jobs it adds all the default jobs to your current available jobs and then you also import diversity jobs and it would ADD the jobs in this preset whiout removing the default ones OR if 2 jobs have the same name it will overwrite the job that was there before for exemple if the default has Miner job and you added extended jobs it with a job named miner too but with more blocks that will reward you the default miner will be overwritten
+
+- making the max ammount of money bigger (would need to change the main money scoreboard)
 
 
 
@@ -36,5 +44,6 @@ adding options
 # later things that are not planned for now but would be very nice 
 
 - /trade 
+
 - a kind of stock market?
 
