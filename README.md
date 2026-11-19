@@ -11,6 +11,9 @@ Get the latest public release here:
 
 This GitHub repository contains the source code and development tools.
 
+Showcase video (v3.3.0 not latest version)
+- https://youtu.be/p2XPvF-W6ww?si=D2rAiUt3bRJn8k7Z
+
 ## Installation
 
 1. Download the latest `.mcaddon` from CurseForge or MCPEDL.
