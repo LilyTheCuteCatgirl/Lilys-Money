@@ -1,3 +1,4 @@
+import { notifyHudReceipt } from "../hud/manager.js";
 import { CONFIG } from "../../config.js";
 import { world, system, Player } from "@minecraft/server";
 import { getPlayerIdentityId, auctionTitle } from "./listings.js";
@@ -96,6 +97,7 @@ export function deliverAhSoldMessagesForIdentity(identityId) {
         }
     }
 
+    for (const sale of mine) notifyHudReceipt(seller, sale.price, `Auction: sold ${sale.itemName}`);
     playMoneySound(seller);
     return true;
 }

@@ -40,7 +40,7 @@ export function registerAddMoneyCommand(customCommandRegistry) {
                 for (const p of targets) {
                     const bal = getBalanceCents(dollarsObj, centsObj, p);
                     const next = bal + parsed.cents;
-                    setBalanceFromTotalCents(dollarsObj, centsObj, p, next, null);
+                    setBalanceFromTotalCents(dollarsObj, centsObj, p, next, "Money added");
 
                     logMoneyEvent("ADD_MONEY", {
                         actor: origin,

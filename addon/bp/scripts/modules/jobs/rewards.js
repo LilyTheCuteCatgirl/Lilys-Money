@@ -1,4 +1,3 @@
-import { observePreRewardBalance } from "../hud/manager.js";
 import { niceIdName } from "../items/identifiers.js";
 import { CONFIG } from "../../config.js";
 import { system, world, Player } from "@minecraft/server";
@@ -214,7 +213,6 @@ system.runInterval(() => {
 function payout(player, centsEarned, kind, id) {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
     const bal = getBalanceCents(dollarsObj, centsObj, player);
-    observePreRewardBalance(player, bal);
     const next = bal + centsEarned;
     const verb = { break: "Mined", place: "Placed", kill: "Killed", pickup: "Picked up" }[kind];
     setBalanceFromTotalCents(dollarsObj, centsObj, player, next, `${verb} ${niceIdName(id)}`.toLowerCase(), `job:${kind}:${id}`);

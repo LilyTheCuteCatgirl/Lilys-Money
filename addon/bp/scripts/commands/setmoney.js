@@ -36,7 +36,7 @@ export function registerSetMoneyCommand(customCommandRegistry) {
                 if (!dollarsObj || !centsObj) return;
 
                 for (const p of targets) {
-                    setBalanceFromTotalCents(dollarsObj, centsObj, p, parsed.cents, null);
+                    setBalanceFromTotalCents(dollarsObj, centsObj, p, parsed.cents, "Balance set");
 
                     logMoneyEvent("SET_MONEY", {
                         actor: origin,

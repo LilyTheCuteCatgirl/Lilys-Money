@@ -1,7 +1,7 @@
 import { system, world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
 import { getHudPosition, HUD_POSITIONS, hasCompactMoney, hasMoneyHud } from "../players/preferences.js";
-import { observeBalance, newHudSession, updateHud } from "./session.js";
+import { enqueueCard, observeBalance, newHudSession, updateHud } from "./session.js";
 
 const sessions = new Map();
 let interval;
@@ -52,7 +52,11 @@ export function syncMoneyHud(player) {
     if (hasMoneyHud(player)) {
         if (!active) {
             sessions.set(player.id, { player, state: newHudSession(), nextPoll: system.currentTick + 20 });
-            sampleHudBalance(player);
+            try {
+                observeBalance(sessions.get(player.id).state, readBalance(player), system.currentTick);
+            } catch {
+                // The next poll retries initialization.
+            }
             if (interval === undefined) interval = system.runInterval(pulse, 1);
         }
         const session = sessions.get(player.id);
@@ -71,27 +75,29 @@ export function syncMoneyHud(player) {
     return false;
 }
 
-export function observePreRewardBalance(player, balance) {
+// Reconcile external changes first, then advance to the committed balance before the next poll.
+export function recordHudChange(player, before, after, description, key) {
     const session = sessions.get(player.id);
-    if (session) observeBalance(session.state, balance, system.currentTick);
-}
-
-export function sampleHudBalance(player, description, key) {
-    try {
-        const session = sessions.get(player.id);
-        if (!session) return;
-        // A chat receipt covers this change even if its scoreboard read has to wait.
-        if (description === null) session.state.observed = undefined;
-        observeBalance(session.state, readBalance(player), system.currentTick, description, key);
-    } catch {
-        // The next HUD tick retries a score that was unavailable during settlement.
+    if (!session) return;
+    const state = session.state;
+    if (before !== undefined) observeBalance(state, before, system.currentTick);
+    if (after === undefined) {
+        state.observed = undefined;
+        return;
     }
+    observeBalance(state, after, system.currentTick, before === undefined ? null : (description ?? null), key);
 }
 
-export function sampleAuctionSeller(identityId) {
+// Pending auction receipts and two-party payments already settled their wallet balances.
+export function notifyHudReceipt(player, delta, description) {
+    const session = sessions.get(player.id);
+    if (session && Number.isSafeInteger(delta) && delta !== 0) enqueueCard(session.state, delta, description, system.currentTick);
+}
+
+export function settleAuctionSeller(identityId, before, after) {
     for (const { player } of sessions.values()) {
         try {
-            if (String(player.scoreboardIdentity?.id) === identityId) sampleHudBalance(player, null);
+            if (String(player.scoreboardIdentity?.id) === identityId) recordHudChange(player, before, after);
         } catch {}
     }
 }

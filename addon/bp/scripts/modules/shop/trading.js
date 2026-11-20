@@ -1,4 +1,4 @@
-import { sampleHudBalance } from "../hud/manager.js";
+import { recordHudChange } from "../hud/manager.js";
 import { CONFIG } from "../../config.js";
 import { normalizeItemId } from "../items/identifiers.js";
 import { stackMatchesTemplate, takeFromSlot, addTemplateItems, getCapacityForTemplate } from "../inventory/templateInventory.js";
@@ -210,7 +210,7 @@ export async function flowBuy(player, it) {
         addTemplateItems(invNow, template, qty, onRollback);
     });
     if (!ok) return shopMessage(player, "§cPurchase failed. Check the Content Log for details.");
-    sampleHudBalance(player, null);
+    recordHudChange(player, next + totalCost, next, `Shop: bought ${shopItemTitle(it)}`);
     logMoneyEvent("SHOP_BUY", {
         player,
         itemId: it.id,
@@ -269,7 +269,7 @@ export async function flowSell(player, it) {
         next = changeTradeBalance(dollarsObj, centsObj, player.scoreboardIdentity, totalPay, onRollback);
     });
     if (!ok) return shopMessage(player, "§cSale failed. Check the Content Log for details.");
-    sampleHudBalance(player, null);
+    recordHudChange(player, next - totalPay, next, `Shop: sold ${shopItemTitle(it)}`);
     logMoneyEvent("SHOP_SELL", {
         player,
         itemId: it.id,

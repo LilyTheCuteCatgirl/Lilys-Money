@@ -1,3 +1,4 @@
+import { formatCents } from "../../addon/bp/scripts/modules/economy/formatting.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { commerceFixture } from "./commerceFixture.mjs";
@@ -145,8 +146,10 @@ test("shop sale restores an earlier slot if removing a later slot fails", async 
         if (i === 1) throw Error("locked slot");
         write(i, v);
     };
+    const read = await captureHud(f);
     f.forms(2);
     await f.flowSell(f.buyer, offer);
+    assert.deepEqual(read(f.buyer), []);
     assert.equal(f.balance(f.buyer), 1000);
     assert.equal(f.buyer.inventory.getItem(0).amount, 1);
     assert.equal(f.buyer.inventory.getItem(1).amount, 1);
@@ -205,25 +208,26 @@ async function captureHud(f) {
     return (player) => {
         for (const timer of f.intervals.values()) if (timer.ticks === 1) timer.callback();
         const [wallet, ...rows] = titles.get(player).split("\n");
-        assert.equal(wallet.slice("~LM3:B§l".length).trim(), "$" + (f.balance(player) / 100).toFixed(2));
-        return rows;
+        assert.equal(wallet.slice("~LM3:B§l".length).trim(), formatCents(f.balance(player)));
+        return rows.map((row) => row.slice(1).replace(/~+$/, "").replace(/§./g, ""));
     };
 }
 
-test("shop receipts update the wallet without adding cards", async (t) => {
+test("shop receipts report actual buys and sells and survive the next poll", async (t) => {
     const f = await shopFixture(t),
         read = await captureHud(f);
     f.forms(2);
     await f.flowBuy(f.buyer, offer);
-    assert.deepEqual(read(f.buyer), []);
+    assert.deepEqual(read(f.buyer), ["Shop: bought Stone -2.50"]);
     assert.match(f.buyer.messages.join(" "), /Bought .*\$2\.50/);
     f.forms(1);
     await f.flowSell(f.buyer, offer);
-    assert.deepEqual(read(f.buyer), []);
+    f.system.currentTick += 20;
+    assert.deepEqual(read(f.buyer), ["Shop: bought Stone -2.50", "Shop: sold Stone +0.35"]);
     assert.match(f.buyer.messages.join(" "), /Sold .*\$0\.35/);
 });
 
-test("auction receipts update both wallets without adding cards, including after a rollback", async (t) => {
+test("auction cards appear for both players only after commit", async (t) => {
     const f = await auctionFixture(t),
         read = await captureHud(f);
     f.online.push(f.buyer, f.seller);
@@ -237,13 +241,14 @@ test("auction receipts update both wallets without adding cards, including after
     assert.deepEqual(read(f.seller), []);
     f.world.setDynamicProperty = write;
     f.buyAuction(f.buyer, "1");
-    assert.deepEqual(read(f.buyer), []);
-    assert.deepEqual(read(f.seller), []);
+    f.system.currentTick += 20;
+    assert.deepEqual(read(f.buyer), ["Auction: bought Stone -1.25"]);
+    assert.deepEqual(read(f.seller), ["Auction: sold Stone +1.25"]);
     assert.match(f.buyer.messages.join(" "), /Bought .*\$1\.25/);
     assert.match(f.seller.messages.join(" "), /bought your .*\$1\.25/);
 });
 
-test("pay receipts update both wallets without adding cards", async (t) => {
+test("pay checks funds and posts one signed receipt for each party", async (t) => {
     const f = await commerceFixture(t),
         read = await captureHud(f);
     const { registerPayCommand } = await f.load("scripts/commands/pay.js");
@@ -253,10 +258,176 @@ test("pay receipts update both wallets without adding cards", async (t) => {
             pay = callback;
         },
     });
-    pay({ sourceEntity: f.buyer }, [f.seller], 1.25);
+    pay({ sourceEntity: f.buyer }, [f.seller], 100);
     f.scheduled.pop()();
     assert.deepEqual(read(f.buyer), []);
     assert.deepEqual(read(f.seller), []);
+    pay({ sourceEntity: f.buyer }, [f.seller], 1.25);
+    f.scheduled.pop()();
+    f.system.currentTick += 20;
+    assert.deepEqual(read(f.buyer), ["Paid Seller -1.25"]);
+    assert.deepEqual(read(f.seller), ["Received from Buyer +1.25"]);
     assert.match(f.buyer.messages.join(" "), /Paid .*Seller/);
     assert.match(f.seller.messages.join(" "), /received .*Buyer/);
+});
+
+async function command(f, module, register, origin, ...args) {
+    let callback;
+    (await f.load("scripts/commands/" + module + ".js"))[register]({
+        registerCommand(_def, fn) {
+            callback = fn;
+        },
+    });
+    callback(origin, ...args);
+    f.scheduled.pop()();
+}
+
+test("command-block adjustments use the actual signed change including unchanged and capped balances", async (t) => {
+    const f = await commerceFixture(t),
+        read = await captureHud(f),
+        origin = { sourceBlock: {} },
+        target = [f.buyer];
+    await command(f, "setmoney", "registerSetMoneyCommand", origin, target, -2);
+    await command(f, "setmoney", "registerSetMoneyCommand", origin, target, -2);
+    await command(f, "addmoney", "registerAddMoneyCommand", origin, target, 0.5);
+    await command(f, "removemoney", "registerRemoveMoneyCommand", origin, target, 1.25);
+    f.system.currentTick += 20;
+    assert.deepEqual(read(f.buyer), ["Balance set -12.00", "Money added +0.50", "Money removed -1.25"]);
+    f.system.currentTick += 100;
+    f.dollars.setScore(f.buyer.scoreboardIdentity, 2147483647);
+    f.cents.setScore(f.buyer.scoreboardIdentity, 97);
+    read(f.buyer);
+    await command(f, "addmoney", "registerAddMoneyCommand", origin, target, 1);
+    assert.ok(read(f.buyer).includes("Money added +0.02"));
+});
+
+test("command-block item trades report only real inventory transactions", async (t) => {
+    const f = await commerceFixture(t),
+        read = await captureHud(f),
+        origin = { sourceBlock: {} };
+    f.online.push(f.buyer);
+    const args = [origin, "Buyer", { id: "minecraft:stone" }, 2, 0.75];
+    await command(f, "sell", "registerSellCommand", ...args);
+    assert.deepEqual(read(f.buyer), []);
+    await command(f, "buy", "registerBuyCommand", ...args);
+    await command(f, "sell", "registerSellCommand", ...args);
+    assert.deepEqual(read(f.buyer), ["Bought Stone -1.50", "Sold Stone +1.50"]);
+});
+
+test("offline sale records produce one combined card on reconnect and survive a failed receipt save", async (t) => {
+    const f = await auctionFixture(t);
+    for (const id of ["1", "2"]) {
+        f.seller.inventory.setItem(0, new f.ItemStack("minecraft:stone", 2));
+        f.list();
+        f.buyAuction(f.buyer, id);
+    }
+    assert.equal(f.loadAh().soldMessages.length, 2);
+    f.online.push(f.seller);
+    const read = await captureHud(f);
+    const join = () => {
+        f.world.afterEvents.playerSpawn.emit({ player: f.seller, initialSpawn: true });
+        f.scheduled.pop()();
+    };
+    const write = f.world.setDynamicProperty;
+    f.world.setDynamicProperty = () => {
+        throw Error("unavailable");
+    };
+    join();
+    assert.deepEqual(read(f.seller), []);
+    f.world.setDynamicProperty = write;
+    join();
+    assert.deepEqual(read(f.seller), ["Auction: sold Stone x2 +2.50"]);
+    const chatCount = f.seller.messages.length;
+    f.world.afterEvents.playerLeave.emit({ playerId: f.seller.id });
+    join();
+    assert.deepEqual(read(f.seller), []);
+    assert.equal(f.seller.messages.length, chatCount);
+});
+
+test("a partial legacy payment produces no success receipt for either player", async (t) => {
+    const f = await commerceFixture(t),
+        read = await captureHud(f);
+    const write = f.cents.setScore;
+    f.cents.setScore = (id, v) => {
+        if (id === f.seller.scoreboardIdentity) throw Error("write failed");
+        write(id, v);
+    };
+    await command(f, "pay", "registerPayCommand", { sourceEntity: f.buyer }, [f.seller], 1.25);
+    f.system.currentTick += 20;
+    assert.deepEqual(read(f.seller), []);
+    assert.deepEqual(read(f.buyer), []);
+});
+
+test("a disabled HUD does not replay earlier payments on enable", async (t) => {
+    const f = await commerceFixture(t),
+        read = await captureHud(f);
+    const { syncMoneyHud } = await f.load("scripts/modules/hud/manager.js");
+    f.buyer.hasTag = (tag) => tag === f.CONFIG.PLAYER_HUD_OFF_TAG;
+    syncMoneyHud(f.buyer);
+    await command(f, "pay", "registerPayCommand", { sourceEntity: f.buyer }, [f.seller], 1.25);
+    f.buyer.hasTag = () => false;
+    syncMoneyHud(f.buyer);
+    assert.deepEqual(read(f.buyer), []);
+    assert.deepEqual(read(f.seller), ["Received from Buyer +1.25"]);
+});
+
+test("initial spawn awards starting money once and respawn generates no card", async (t) => {
+    const f = await commerceFixture(t);
+    await f.load("scripts/main.js");
+    const tags = new Set();
+    f.buyer.hasTag = (tag) => tags.has(tag);
+    f.buyer.addTag = (tag) => tags.add(tag);
+    f.properties.set(f.CONFIG.START_MONEY_CENTS_DP_KEY, 123);
+    const read = await captureHud(f);
+    function spawn(initialSpawn) {
+        const start = f.scheduled.length;
+        f.world.afterEvents.playerSpawn.emit({ player: f.buyer, initialSpawn });
+        for (const fn of f.scheduled.splice(start)) fn();
+    }
+    spawn(true);
+    assert.deepEqual(read(f.buyer), ["Starting money +1.23"]);
+    spawn(false);
+    assert.deepEqual(read(f.buyer), []);
+    spawn(true);
+    assert.deepEqual(read(f.buyer), []);
+    assert.equal(f.balance(f.buyer), 1123);
+});
+
+test("shop inventory failure after debit rolls the wallet back without a HUD receipt", async (t) => {
+    const f = await shopFixture(t),
+        read = await captureHud(f);
+    f.buyer.inventory.setItem = () => {
+        throw Error("locked");
+    };
+    f.forms(2);
+    await f.flowBuy(f.buyer, offer);
+    f.system.currentTick += 20;
+    assert.equal(f.balance(f.buyer), 1000);
+    assert.deepEqual(read(f.buyer), []);
+});
+
+test("legacy sell slot-clear failure retains its financial behavior but suppresses the sale card", async (t) => {
+    const f = await commerceFixture(t),
+        read = await captureHud(f);
+    f.online.push(f.buyer);
+    f.buyer.inventory.setItem(0, new f.ItemStack("minecraft:stone", 1));
+    f.buyer.inventory.setItem = () => {
+        throw Error("locked");
+    };
+    await command(f, "sell", "registerSellCommand", { sourceBlock: {} }, "Buyer", { id: "minecraft:stone" }, 1, 0.75);
+    f.system.currentTick += 20;
+    assert.equal(f.buyer.inventory.getItem(0).amount, 1);
+    assert.equal(f.balance(f.buyer), 1075);
+    assert.deepEqual(read(f.buyer), []);
+});
+
+test("normalization preserves an existing balance without a HUD card", async (t) => {
+    const f = await commerceFixture(t);
+    f.cents.setScore(f.buyer.scoreboardIdentity, -12);
+    const read = await captureHud(f);
+    const { normalizePlayerIfNeeded } = await f.load("scripts/modules/economy/balance.js");
+    normalizePlayerIfNeeded(f.dollars, f.cents, f.buyer);
+    f.system.currentTick += 20;
+    assert.equal(f.balance(f.buyer), 988);
+    assert.deepEqual(read(f.buyer), []);
 });

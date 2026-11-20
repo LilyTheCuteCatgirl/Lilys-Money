@@ -1,3 +1,5 @@
+import { niceIdName } from "../modules/items/identifiers.js";
+import { notifyHudReceipt } from "../modules/hud/manager.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
@@ -136,7 +138,11 @@ export function registerSellCommand(customCommandRegistry) {
 
                 const bal = getBalanceCents(dollarsObj, centsObj, target);
                 const next = bal + totalPay;
-                setBalanceFromTotalCents(dollarsObj, centsObj, target, next, null);
+                const delta = setBalanceFromTotalCents(dollarsObj, centsObj, target, next);
+                // The legacy removal helper may count a slot even if clearing it failed.
+                try {
+                    if (countItems(inv, itemId) === have - amountItems) notifyHudReceipt(target, delta, `Sold ${niceIdName(itemId)}`);
+                } catch {}
 
                 logMoneyEvent("SELL_COMMAND", {
                     actor: origin,

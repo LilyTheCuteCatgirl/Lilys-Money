@@ -1,4 +1,4 @@
-import { sampleHudBalance, sampleAuctionSeller } from "../hud/manager.js";
+import { recordHudChange, settleAuctionSeller } from "../hud/manager.js";
 import { world } from "@minecraft/server";
 import {
     getPlayerIdentityId,
@@ -65,12 +65,12 @@ export function buyAuction(player, auctionId) {
         return "details";
     }
 
-    let buyerBalanceAfter;
+    let buyerBalanceAfter, sellerBalanceAfter;
     const ok = runTrade((onRollback) => {
         const seller = sellerTarget(a, dollarsObj, centsObj);
         if (!seller) throw new Error("Seller scoreboard identity is unavailable.");
         buyerBalanceAfter = changeTradeBalance(dollarsObj, centsObj, player.scoreboardIdentity, -a.price, onRollback);
-        changeTradeBalance(dollarsObj, centsObj, seller, a.price, onRollback);
+        sellerBalanceAfter = changeTradeBalance(dollarsObj, centsObj, seller, a.price, onRollback);
         addTemplateItems(inv, a.template, a.amount, onRollback);
         queueAhSoldMessage(ah, a, player.name);
         ah.auctions.splice(index, 1);
@@ -80,8 +80,8 @@ export function buyAuction(player, auctionId) {
         msg(player, "§cPurchase failed. Check the Content Log for details.");
         return "details";
     }
-    sampleHudBalance(player, null);
-    sampleAuctionSeller(a.sellerIdentityId);
+    recordHudChange(player, buyerBalanceAfter + a.price, buyerBalanceAfter, `Auction: bought ${auctionTitle(a)}`);
+    settleAuctionSeller(a.sellerIdentityId, sellerBalanceAfter - a.price, sellerBalanceAfter);
     logMoneyEvent("AH_BUY", {
         buyer: player,
         sellerIdentityId: a.sellerIdentityId,

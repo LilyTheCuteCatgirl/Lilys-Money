@@ -1,4 +1,4 @@
-import { sampleHudBalance } from "../hud/manager.js";
+import { recordHudChange } from "../hud/manager.js";
 import { world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
 import { clampTotalCents } from "./formatting.js";
@@ -46,6 +46,14 @@ export function getBalanceCents(dollarsObj, centsObj, player) {
     return d * 100 + c;
 }
 
+function readReceiptBalance(dollars, cents, identity) {
+    try {
+        return (dollars.getScore(identity) ?? 0) * 100 + (cents.getScore(identity) ?? 0);
+    } catch {
+        return undefined;
+    }
+}
+
 export function setBalanceFromTotalCents(dollarsObj, centsObj, player, totalCents, description, key) {
     totalCents = clampTotalCents(totalCents);
 
@@ -55,13 +63,21 @@ export function setBalanceFromTotalCents(dollarsObj, centsObj, player, totalCent
     const dollars = Math.floor(totalCents / 100);
     const cents = totalCents - dollars * 100; // Keep the cents component between 0 and 99, including for negative balances.
 
+    const before = readReceiptBalance(dollarsObj, centsObj, id);
+    let written = true;
     try {
         dollarsObj.setScore(id, dollars);
-    } catch {}
+    } catch {
+        written = false;
+    }
     try {
         centsObj.setScore(id, cents);
-    } catch {}
-    sampleHudBalance(player, description, key);
+    } catch {
+        written = false;
+    }
+    const after = written ? totalCents : readReceiptBalance(dollarsObj, centsObj, id);
+    recordHudChange(player, before, after, written ? description : null, key);
+    return written && before !== undefined ? after - before : undefined;
 }
 
 export function normalizePlayerIfNeeded(dollarsObj, centsObj, player) {

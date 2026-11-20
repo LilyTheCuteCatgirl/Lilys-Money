@@ -1,3 +1,4 @@
+import { notifyHudReceipt } from "../modules/hud/manager.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
 import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
@@ -75,8 +76,12 @@ export function registerPayCommand(customCommandRegistry) {
 
                 const targetBal = getBalanceCents(dollarsObj, centsObj, target);
 
-                setBalanceFromTotalCents(dollarsObj, centsObj, source, senderBal - amount, null);
-                setBalanceFromTotalCents(dollarsObj, centsObj, target, targetBal + amount, null);
+                const debit = setBalanceFromTotalCents(dollarsObj, centsObj, source, senderBal - amount);
+                const credit = setBalanceFromTotalCents(dollarsObj, centsObj, target, targetBal + amount);
+                if (debit !== undefined && credit !== undefined) {
+                    notifyHudReceipt(source, debit, `Paid ${target.name}`);
+                    notifyHudReceipt(target, credit, `Received from ${source.name}`);
+                }
 
                 logMoneyEvent("PAY", {
                     actor: source,

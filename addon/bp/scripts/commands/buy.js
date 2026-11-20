@@ -1,3 +1,4 @@
+import { niceIdName } from "../modules/items/identifiers.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
@@ -155,7 +156,7 @@ export function registerBuyCommand(customCommandRegistry) {
                     return;
                 }
 
-                setBalanceFromTotalCents(dollarsObj, centsObj, target, bal - totalCost, null);
+                setBalanceFromTotalCents(dollarsObj, centsObj, target, bal - totalCost, `Bought ${niceIdName(itemId)}`);
 
                 logMoneyEvent("BUY_COMMAND", {
                     actor: origin,
