@@ -1,5 +1,6 @@
+import { serverOptions } from "../settings/server.js";
 import { recordHudChange } from "../hud/manager.js";
-import { CONFIG } from "../../config.js";
+
 import { normalizeItemId } from "../items/identifiers.js";
 import { stackMatchesTemplate, takeFromSlot, addTemplateItems, getCapacityForTemplate } from "../inventory/templateInventory.js";
 import { getTemplateForShopItem, shopMessage, shopItemTitle, getShopItemIcon } from "./catalog.js";
@@ -11,9 +12,7 @@ import { getInventoryContainer } from "../inventory/items.js";
 import { ensureMoneyObjectives, getBalanceCents } from "../economy/balance.js";
 import { runTrade, changeTradeBalance } from "../economy/trade.js";
 import { logMoneyEvent } from "../logging/moneylogging.js";
-import { playMoneySound } from "../players/preferences.js";
-
-const MAX_TRADE_AMOUNT = Math.max(1, Math.floor(Number(CONFIG.SHOP_MAX_TRADE_AMOUNT ?? 2304)));
+import { getDisplayOptions, playMoneySound } from "../players/preferences.js";
 
 const SHOP_CONFIRM_UI = "§a§n§d§e§x§d§b§_§m§e§d§i§u§m§_§l§o§n§g§_§f§o§r§m§r";
 
@@ -155,6 +154,7 @@ async function confirmShopSell(player, it, qty, totalPay, balanceBefore) {
 }
 
 export async function flowBuy(player, it) {
+    if (!serverOptions().shop || !serverOptions().buy) return shopMessage(player, "Shop buy transactions are disabled.");
     if (isPotionItem(it.id)) return shopMessage(player, "§cPotion effects cannot be preserved in shop trades.");
     if (!it.allowBuy) return shopMessage(player, "§cBuying is disabled for this item.");
     if (it.buy <= 0) return shopMessage(player, "§cThis item has no buy price.");
@@ -178,7 +178,7 @@ export async function flowBuy(player, it) {
         return shopMessage(player, `§cNot enough money. You need at least §e${formatCents(it.buy)}§c.`);
     }
 
-    const maxBuy = Math.min(MAX_TRADE_AMOUNT, spaceLeft, affordable);
+    const maxBuy = Math.min(serverOptions().maxItems, spaceLeft, affordable);
 
     const qty = await askQuantity(player, "Buy Amount", 1, maxBuy, 1);
     if (!qty) return;
@@ -186,8 +186,11 @@ export async function flowBuy(player, it) {
     const totalCost = it.buy * qty;
     if (!Number.isSafeInteger(totalCost)) return shopMessage(player, "§cTotal cost is too large.");
 
-    const confirmed = await confirmShopBuy(player, it, qty, totalCost, bal);
+    const confirmed =
+        !serverOptions().confirm || !getDisplayOptions(player).confirmBuy || (await confirmShopBuy(player, it, qty, totalCost, bal));
     if (!confirmed) return;
+    if (!serverOptions().shop || !serverOptions().buy || qty > serverOptions().maxItems)
+        return shopMessage(player, "Shop settings changed. Reopen the shop.");
     if (!offerAvailable(it, "buy")) return shopMessage(player, "§cThis offer has changed. Reopen the shop.");
 
     // Recheck the balance and available space after the player confirms the purchase.
@@ -223,10 +226,11 @@ export async function flowBuy(player, it) {
         player,
         `§2Bought §e${qty}§2 x §f${shopItemTitle(it)}§2 for §e${formatCents(totalCost)}§2. Balance: §e${formatCents(next)}§2.`,
     );
-    playMoneySound(player);
+    playMoneySound(player, "spend");
 }
 
 export async function flowSell(player, it) {
+    if (!serverOptions().shop || !serverOptions().sell) return shopMessage(player, "Shop sell transactions are disabled.");
     if (isPotionItem(it.id)) return shopMessage(player, "§cPotion effects cannot be preserved in shop trades.");
     if (!it.allowSell) return shopMessage(player, "§cSelling is disabled for this item.");
 
@@ -239,7 +243,7 @@ export async function flowSell(player, it) {
     const have = countShopItems(inv, it);
     if (have <= 0) return shopMessage(player, `§cYou have no §f${shopItemTitle(it)}§c to sell.`);
 
-    const maxSell = Math.min(MAX_TRADE_AMOUNT, have);
+    const maxSell = Math.min(serverOptions().maxItems, have);
 
     const qty = await askQuantity(player, "Sell Amount", 1, maxSell, 1);
     if (!qty) return;
@@ -250,8 +254,10 @@ export async function flowSell(player, it) {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
     const bal = getBalanceCents(dollarsObj, centsObj, player);
 
-    const confirmed = await confirmShopSell(player, it, qty, totalPay, bal);
+    const confirmed = !serverOptions().confirm || (await confirmShopSell(player, it, qty, totalPay, bal));
     if (!confirmed) return;
+    if (!serverOptions().shop || !serverOptions().sell || qty > serverOptions().maxItems)
+        return shopMessage(player, "Shop settings changed. Reopen the shop.");
     if (!offerAvailable(it, "sell")) return shopMessage(player, "§cThis offer has changed. Reopen the shop.");
 
     // The player may have moved or used the items while the sale form was open.

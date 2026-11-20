@@ -1,4 +1,6 @@
-import { CONFIG } from "../../config.js";
+import { sendChat } from "../chat.js";
+import { serverOptions } from "../settings/server.js";
+
 import { ensureMoneyObjectives, getBalanceCents } from "../economy/balance.js";
 import { formatCents } from "../economy/formatting.js";
 import { formatItemLinePlayer, findItemInShop, shopItemTitle, getShopItemIcon, getCategoryIcon } from "./catalog.js";
@@ -9,8 +11,6 @@ import { ActionFormData } from "@minecraft/server-ui";
 import { isAdmin } from "../commandSource.js";
 import { flowBuy, flowSell } from "./trading.js";
 import { openAdminMenu } from "./adminUi.js";
-
-const MAX_SHOP_SEARCH_RESULTS = Math.max(1, Math.floor(Number(CONFIG.SHOP_MAX_SEARCH_RESULTS ?? 30)));
 
 function getMoneyStr(player) {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
@@ -116,6 +116,7 @@ function buildShopItemDetailsBody(player, it) {
 }
 
 export async function openShopEntry(player, itemQuery) {
+    if (!serverOptions().shop) return sendChat(player, "The shop is disabled.");
     const shop = loadShop();
 
     if (!itemQuery || !String(itemQuery).trim()) {
@@ -126,7 +127,7 @@ export async function openShopEntry(player, itemQuery) {
     const matches = findItemInShop(shop, query);
 
     if (matches.length === 0) {
-        player.sendMessage("§r<§dLily's Money§r> §r" + `§cItem not found in shop: §f${itemQuery}`);
+        sendChat(player, `§cItem not found in shop: §f${itemQuery}`);
         return openShopRoot(player);
     }
 
@@ -135,7 +136,7 @@ export async function openShopEntry(player, itemQuery) {
         return openItemMenu(player, m.ci, m.ii);
     }
 
-    const shownMatches = matches.slice(0, MAX_SHOP_SEARCH_RESULTS);
+    const shownMatches = matches.slice(0, serverOptions().search);
     const hiddenCount = matches.length - shownMatches.length;
 
     const form = new ActionFormData()

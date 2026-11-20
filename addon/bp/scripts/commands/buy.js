@@ -1,3 +1,4 @@
+import { sendChat, chatText } from "../modules/chat.js";
 import { niceIdName } from "../modules/items/identifiers.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
 import { CONFIG } from "../config.js";
@@ -99,22 +100,22 @@ export function registerBuyCommand(customCommandRegistry) {
             if (!isAdminOrCommandBlock(origin)) {
                 return {
                     status: CustomCommandStatus.Failure,
-                    message: `Only admins (tag: ${CONFIG.ADMIN_TAG}) or command blocks can use this.`,
+                    message: chatText(`Only admins (tag: ${CONFIG.ADMIN_TAG}) or command blocks can use this.`),
                 };
             }
 
             if (!Number.isInteger(amountItems) || amountItems <= 0) {
-                return { status: CustomCommandStatus.Failure, message: "Item amount must be a positive whole number." };
+                return { status: CustomCommandStatus.Failure, message: chatText("Item amount must be a positive whole number.") };
             }
 
             const parsed = parseFloatToCents(priceFloat, false);
-            if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: parsed.error };
+            if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: chatText(parsed.error) };
             const unitPrice = parsed.cents;
-            if (unitPrice <= 0) return { status: CustomCommandStatus.Failure, message: "Price must be > 0." };
+            if (unitPrice <= 0) return { status: CustomCommandStatus.Failure, message: chatText("Price must be > 0.") };
 
             const target = resolveTarget(origin, targetRaw);
             if (!(target instanceof Player)) {
-                return { status: CustomCommandStatus.Failure, message: "Target must be an online player (name, @p, @r, @s)." };
+                return { status: CustomCommandStatus.Failure, message: chatText("Target must be an online player (name, @p, @r, @s).") };
             }
 
             const itemId = itemType.id;
@@ -122,7 +123,7 @@ export function registerBuyCommand(customCommandRegistry) {
             const totalCost = unitPrice * amountItems;
             // Keep the total within the range of exact integer arithmetic.
             if (!Number.isSafeInteger(totalCost)) {
-                return { status: CustomCommandStatus.Failure, message: "Total price is too large." };
+                return { status: CustomCommandStatus.Failure, message: chatText("Total price is too large.") };
             }
 
             system.run(() => {
@@ -131,28 +132,25 @@ export function registerBuyCommand(customCommandRegistry) {
 
                 const inv = getInventoryContainer(target);
                 if (!inv) {
-                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cNo inventory container.");
+                    sendChat(target, "§cNo inventory container.");
                     return;
                 }
 
                 const bal = getBalanceCents(dollarsObj, centsObj, target);
 
                 if (bal < totalCost) {
-                    target.sendMessage(
-                        "§r<§dLily's Money§r> §r" +
-                            `§cNot enough money. Balance: §e${formatCents(bal)}§c, needed: §e${formatCents(totalCost)}§c.`,
-                    );
+                    sendChat(target, `§cNot enough money. Balance: §e${formatCents(bal)}§c, needed: §e${formatCents(totalCost)}§c.`);
                     return;
                 }
 
                 if (!canFitExact(inv, itemId, amountItems)) {
-                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cNot enough inventory space for that purchase.");
+                    sendChat(target, "§cNot enough inventory space for that purchase.");
                     return;
                 }
 
                 const ok = addExactItems(inv, itemId, amountItems);
                 if (!ok) {
-                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cFailed to give items.");
+                    sendChat(target, "§cFailed to give items.");
                     return;
                 }
 
@@ -167,9 +165,9 @@ export function registerBuyCommand(customCommandRegistry) {
                     balanceAfter: bal - totalCost,
                 });
 
-                target.sendMessage(
-                    "§r<§dLily's Money§r> §r" +
-                        `§2Bought §e${amountItems}§2 x §f${itemId}§2 for §e${formatCents(totalCost)}§2. Balance: §e${formatCents(bal - totalCost)}§2.`,
+                sendChat(
+                    target,
+                    `§2Bought §e${amountItems}§2 x §f${itemId}§2 for §e${formatCents(totalCost)}§2. Balance: §e${formatCents(bal - totalCost)}§2.`,
                 );
 
                 reply(origin, `§aGave §e${amountItems}§a x §f${itemId}§a to §f${target.name}§a for §e${formatCents(totalCost)}§a.`);

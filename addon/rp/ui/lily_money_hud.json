@@ -55,7 +55,7 @@
             },
             {
               "binding_type": "view",
-              "source_property_name": "(((((('%.25s' * #hud_title_text_string) - $route) - '        ') - '    ') - '  ') - ' ')",
+              "source_property_name": "((((((('%.28s' * #hud_title_text_string) - $route) - '______________________') - '        ') - '    ') - '  ') - ' ')",
               "target_property_name": "#text"
             },
             {
@@ -98,7 +98,7 @@
             },
             {
               "binding_type": "view",
-              "source_property_name": "((((((('%.25s' * #saved) - $route) - '~LM3:R') - '        ') - '    ') - '  ') - ' ')",
+              "source_property_name": "(((((((('%.28s' * #saved) - $route) - '~LM3:R') - '______________________') - '        ') - '    ') - '  ') - ' ')",
               "target_property_name": "#text",
               "source_control_name": "balance_memory",
               "resolve_sibling_scope": true
@@ -126,109 +126,109 @@
       {
         "notice_text_1@lily_money_hud.notice_text": {
           "$position": "$row1",
-          "$start": "%.26s",
-          "$end": "%.282s",
+          "$start": "%.29s",
+          "$end": "%.285s",
           "$slot_name": "notice_text_1",
-          "$after_phase": "%.27s"
+          "$after_phase": "%.30s"
         }
       },
       {
         "notice_text_2@lily_money_hud.notice_text": {
           "$position": "$row2",
-          "$start": "%.283s",
-          "$end": "%.539s",
+          "$start": "%.286s",
+          "$end": "%.542s",
           "$slot_name": "notice_text_2",
-          "$after_phase": "%.284s"
+          "$after_phase": "%.287s"
         }
       },
       {
         "notice_text_3@lily_money_hud.notice_text": {
           "$position": "$row3",
-          "$start": "%.540s",
-          "$end": "%.796s",
+          "$start": "%.543s",
+          "$end": "%.799s",
           "$slot_name": "notice_text_3",
-          "$after_phase": "%.541s"
+          "$after_phase": "%.544s"
         }
       },
       {
         "notice_text_4@lily_money_hud.notice_text": {
           "$position": "$row4",
-          "$start": "%.797s",
-          "$end": "%.1053s",
+          "$start": "%.800s",
+          "$end": "%.1056s",
           "$slot_name": "notice_text_4",
-          "$after_phase": "%.798s"
+          "$after_phase": "%.801s"
         }
       },
       {
         "notice_text_5@lily_money_hud.notice_text": {
           "$position": "$row5",
-          "$start": "%.1054s",
-          "$end": "%.1310s",
+          "$start": "%.1057s",
+          "$end": "%.1313s",
           "$slot_name": "notice_text_5",
-          "$after_phase": "%.1055s"
+          "$after_phase": "%.1058s"
         }
       },
       {
         "notice_text_6@lily_money_hud.notice_text": {
           "$position": "$row6",
-          "$start": "%.1311s",
-          "$end": "%.1567s",
+          "$start": "%.1314s",
+          "$end": "%.1570s",
           "$slot_name": "notice_text_6",
-          "$after_phase": "%.1312s"
+          "$after_phase": "%.1315s"
         }
       },
       {
         "last_notice_text_1@lily_money_hud.last_notice_text": {
           "$position": "$row1",
-          "$start": "%.26s",
-          "$end": "%.282s",
+          "$start": "%.29s",
+          "$end": "%.285s",
           "$slot_name": "last_notice_text_1",
-          "$after_phase": "%.27s"
+          "$after_phase": "%.30s"
         }
       },
       {
         "last_notice_text_2@lily_money_hud.last_notice_text": {
           "$position": "$row2",
-          "$start": "%.283s",
-          "$end": "%.539s",
+          "$start": "%.286s",
+          "$end": "%.542s",
           "$slot_name": "last_notice_text_2",
-          "$after_phase": "%.284s"
+          "$after_phase": "%.287s"
         }
       },
       {
         "last_notice_text_3@lily_money_hud.last_notice_text": {
           "$position": "$row3",
-          "$start": "%.540s",
-          "$end": "%.796s",
+          "$start": "%.543s",
+          "$end": "%.799s",
           "$slot_name": "last_notice_text_3",
-          "$after_phase": "%.541s"
+          "$after_phase": "%.544s"
         }
       },
       {
         "last_notice_text_4@lily_money_hud.last_notice_text": {
           "$position": "$row4",
-          "$start": "%.797s",
-          "$end": "%.1053s",
+          "$start": "%.800s",
+          "$end": "%.1056s",
           "$slot_name": "last_notice_text_4",
-          "$after_phase": "%.798s"
+          "$after_phase": "%.801s"
         }
       },
       {
         "last_notice_text_5@lily_money_hud.last_notice_text": {
           "$position": "$row5",
-          "$start": "%.1054s",
-          "$end": "%.1310s",
+          "$start": "%.1057s",
+          "$end": "%.1313s",
           "$slot_name": "last_notice_text_5",
-          "$after_phase": "%.1055s"
+          "$after_phase": "%.1058s"
         }
       },
       {
         "last_notice_text_6@lily_money_hud.last_notice_text": {
           "$position": "$row6",
-          "$start": "%.1311s",
-          "$end": "%.1567s",
+          "$start": "%.1314s",
+          "$end": "%.1570s",
           "$slot_name": "last_notice_text_6",
-          "$after_phase": "%.1312s"
+          "$after_phase": "%.1315s"
         }
       }
     ],

@@ -16,8 +16,8 @@ export function getAhNowTicks() {
 
 export const AH_CLOCK_INTERVAL_TICKS = Math.max(1, Math.floor(Number(CONFIG.AH_CLOCK_INTERVAL_TICKS ?? 1200)));
 
-export function advanceAhClock() {
-    const next = getAhNowTicks() + AH_CLOCK_INTERVAL_TICKS;
+export function advanceAhClock(ticks = AH_CLOCK_INTERVAL_TICKS) {
+    const next = getAhNowTicks() + ticks;
     world.setDynamicProperty(AH_CLOCK_DP_KEY, next);
     AH_CLOCK_CACHE = next;
 }

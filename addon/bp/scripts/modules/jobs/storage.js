@@ -1,3 +1,4 @@
+import { sendChat } from "../chat.js";
 import { CONFIG } from "../../config.js";
 import { DEFAULT_JOBS, JOB_ICON_PRESETS } from "../defaults/jobs.js";
 import { system, world } from "@minecraft/server";
@@ -28,7 +29,7 @@ export function shortId(id) {
 
 export function tell(player, text) {
     try {
-        player.sendMessage("§r<§dLily's Money§r> §r" + text);
+        sendChat(player, text);
     } catch {}
 }
 

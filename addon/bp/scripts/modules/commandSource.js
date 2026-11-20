@@ -1,3 +1,4 @@
+import { sendChat } from "./chat.js";
 import { Player } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 
@@ -20,5 +21,5 @@ export function isAdminOrCommandBlock(origin) {
 
 export function reply(originOrPlayer, text) {
     const p = originOrPlayer instanceof Player ? originOrPlayer : getCommandSource(originOrPlayer);
-    if (p instanceof Player) p.sendMessage("§r<§dLily's Money§r> §r" + text);
+    if (p instanceof Player) sendChat(p, text);
 }

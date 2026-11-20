@@ -87,12 +87,7 @@ function setVersion() {
 
     next.set(
         paths[2],
-        replaceExactlyOnce(
-            originals.get(paths[2]),
-            /Lily's Money - v\d+\.\d+\.\d+/g,
-            `Lily's Money - v${version}`,
-            "startup welcome version in main.js",
-        ),
+        replaceExactlyOnce(originals.get(paths[2]), /Scripts v\d+\.\d+\.\d+/g, `Scripts v${version}`, "startup welcome version in main.js"),
     );
     next.set(
         paths[3],

@@ -1,3 +1,4 @@
+import { serverOptions } from "../settings/server.js";
 import { getItemIconFromId } from "../ui/itemIcons.js";
 import {
     shortId,
@@ -26,6 +27,7 @@ function getRewardRuleIcon(type, id) {
 }
 
 export async function openJobRoot(player) {
+    if (!serverOptions().jobs) return tell(player, "Jobs are disabled.");
     const jobs = loadJobs();
     const admin = isAdmin(player);
 
@@ -58,7 +60,7 @@ export async function openJobRoot(player) {
 
     if (res.selection === leaveIndex) {
         if (currentJob) {
-            setJob(player, null);
+            if (!setJob(player, null)) return;
             tell(player, "§aYou left your job.");
         }
         return;
@@ -90,7 +92,7 @@ async function openJobDetails(player, jobId) {
 
     if (res.selection === 0) {
         if (!alreadyCurrent) {
-            setJob(player, job.id);
+            if (!setJob(player, job.id)) return;
             tell(player, `§aYou are now a §f${job.name}§a.`);
         }
         return;

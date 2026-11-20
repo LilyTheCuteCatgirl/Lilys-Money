@@ -41,7 +41,7 @@ function makeFixture(t) {
         modules: [{ type: "resources", version: [3, 4, 0] }],
         dependencies: [{ uuid: ids.bp, version: [3, 4, 0] }],
     });
-    put("addon/bp/scripts/main.js", 'const startup = "Lily\'s Money - v3.4.0";\n');
+    put("addon/bp/scripts/main.js", 'const startup = "Scripts v3.4.0";\n');
     put("addon/bp/scripts/commands/moneyhelp.js", 'const help = "Lily\'s Money v3.4.0";\n');
     const run = (value) => spawnSync(process.execPath, [path.join(root, "tools/set-version.mjs"), value], { cwd: root, encoding: "utf8" });
     const read = (filename) => fs.readFileSync(path.join(root, filename), "utf8");
@@ -74,7 +74,7 @@ test("version command updates all pack, npm and in-game labels but not Minecraft
     assert.deepEqual(rp.dependencies[0].version, [3, 5, 2]);
     assert.equal(bp.dependencies[1].version, "2.1.0");
     assert.deepEqual(bp.header.min_engine_version, [1, 21, 100]);
-    assert.ok(read("addon/bp/scripts/main.js").includes("Lily's Money - v3.5.2"));
+    assert.ok(read("addon/bp/scripts/main.js").includes("Scripts v3.5.2"));
     assert.ok(read("addon/bp/scripts/commands/moneyhelp.js").includes("Lily's Money v3.5.2"));
     assert.equal(json("package.json").version, "3.5.2");
     assert.equal(json("package-lock.json").version, "3.5.2");

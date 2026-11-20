@@ -1,12 +1,13 @@
+import { chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getScoreSafe } from "../modules/economy/balance.js";
-import { formatCents } from "../modules/economy/formatting.js";
+import { formatMoneyForPlayer } from "../modules/players/preferences.js";
 import { getCommandSource, reply } from "../modules/commandSource.js";
 
 import { getSavedPlayerNameFromParticipant } from "../modules/players/nameDatabase.js";
 
-function buildTopMoneyMessage(rows, page, perPage) {
+function buildTopMoneyMessage(rows, page, perPage, viewer) {
     const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
     const safePage = Math.min(Math.max(1, page), totalPages);
 
@@ -23,7 +24,7 @@ function buildTopMoneyMessage(rows, page, perPage) {
     for (let i = 0; i < slice.length; i++) {
         const rank = start + i + 1;
         const r = slice[i];
-        text += `§e#${rank} §f${r.name} §8- §a${formatCents(r.total)}\n`;
+        text += `§e#${rank} §f${r.name} §8- §a${formatMoneyForPlayer(viewer, r.total)}\n`;
     }
 
     text += `§8Tip: /topmoney ${safePage + 1} for next page`;
@@ -32,7 +33,7 @@ function buildTopMoneyMessage(rows, page, perPage) {
 
 function handleTopMoney(origin, pageArg) {
     const page = Number.isInteger(pageArg) ? pageArg : 1;
-    if (page < 1) return { status: CustomCommandStatus.Failure, message: "Page must be 1 or higher." };
+    if (page < 1) return { status: CustomCommandStatus.Failure, message: chatText("Page must be 1 or higher.") };
 
     system.run(() => {
         const { dollarsObj, centsObj } = ensureMoneyObjectives();
@@ -64,10 +65,8 @@ function handleTopMoney(origin, pageArg) {
 
         rows.sort((a, b) => b.total - a.total);
 
-        const msg = buildTopMoneyMessage(rows, page, CONFIG.TOP_N_PER_PAGE ?? 10);
-
         const src = getCommandSource(origin);
-        if (src instanceof Player) reply(origin, msg);
+        if (src instanceof Player) reply(origin, buildTopMoneyMessage(rows, page, CONFIG.TOP_N_PER_PAGE ?? 10, src));
     });
 
     return { status: CustomCommandStatus.Success };

@@ -1,6 +1,6 @@
-import { world } from "@minecraft/server";
+import { system, world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
-import { formatCents, formatCentsCompact } from "../economy/formatting.js";
+import { formatDisplayMoney } from "../economy/formatting.js";
 
 let _personalDefaultsCache = null;
 
@@ -9,6 +9,8 @@ export function getMoneyPersonalDefaults() {
 
     const def = {
         hud: true,
+        notifications: true,
+        duration: 3,
         position: "Top right",
         sound: true,
         compact: false,
@@ -20,6 +22,8 @@ export function getMoneyPersonalDefaults() {
             const parsed = JSON.parse(raw);
 
             _personalDefaultsCache = {
+                notifications: typeof parsed?.notifications === "boolean" ? parsed.notifications : true,
+                duration: DURATIONS.includes(parsed?.duration) ? parsed.duration : 3,
                 hud: typeof parsed?.hud === "boolean" ? parsed.hud : def.hud,
                 position: HUD_POSITIONS.includes(parsed?.position) ? parsed.position : def.position,
                 sound: typeof parsed?.sound === "boolean" ? parsed.sound : def.sound,
@@ -38,17 +42,16 @@ export function setMoneyPersonalDefaults(next) {
     const cur = getMoneyPersonalDefaults();
 
     const merged = {
+        notifications: next.notifications ?? cur.notifications,
+        duration: DURATIONS.includes(next.duration) ? next.duration : cur.duration,
         hud: typeof next?.hud === "boolean" ? next.hud : cur.hud,
         position: HUD_POSITIONS.includes(next?.position) ? next.position : cur.position,
         sound: typeof next?.sound === "boolean" ? next.sound : cur.sound,
         compact: typeof next?.compact === "boolean" ? next.compact : cur.compact,
     };
 
+    world.setDynamicProperty(CONFIG.MONEY_PERSONAL_DEFAULTS_DP_KEY, JSON.stringify(merged));
     _personalDefaultsCache = merged;
-
-    try {
-        world.setDynamicProperty(CONFIG.MONEY_PERSONAL_DEFAULTS_DP_KEY, JSON.stringify(merged));
-    } catch {}
 
     return merged;
 }
@@ -57,6 +60,7 @@ function _tag(name, fallback) {
     return CONFIG[name] ?? `lilymoney:${fallback}`;
 }
 
+export const DURATIONS = [1, 2, 3, 4, 5, 7, 10];
 export const HUD_POSITIONS = ["Top right", "Top left", "Bottom right", "Bottom left"];
 
 export function getHudPosition(player) {
@@ -132,23 +136,70 @@ export function setCompactMoney(player, enabled) {
     } catch {}
 }
 
-export function playMoneySound(player) {
+const lastSound = new WeakMap();
+export function playMoneySound(player, event = "receive") {
     try {
         if (!hasMoneySound(player)) return;
 
+        const options = getDisplayOptions(player);
+        if (event === "spend" ? !options.spendSound : !options.receiveSound) return;
+        if ((event === "job" && !options.jobSound) || (event === "auction" && !options.auctionSound)) return;
+        if (options.combineSound && system.currentTick - (lastSound.get(player) ?? -Infinity) < 4) return;
+        lastSound.set(player, system.currentTick);
+        const volume = (options.volume / 100) * (options.effect === "Soft" ? 0.65 : 1);
+        const pitch = options.effect === "Soft" ? 0.8 : options.effect === "Coin" ? 1.7 : 1;
         // Try the sound API first to avoid running a command for each payment.
         try {
             if (typeof player.playSound === "function") {
-                player.playSound("random.orb", { volume: 1, pitch: 1 });
+                player.playSound("random.orb", { volume, pitch });
                 return;
             }
         } catch {}
 
         const name = player.name.replace(/"/g, '\\"');
-        player.dimension.runCommand(`playsound random.orb "${name}" ~ ~ ~ 1 1 2`);
+        player.dimension.runCommand(`playsound random.orb "${name}" ~ ~ ~ ${volume} ${pitch} 2`);
     } catch {}
 }
 
 export function formatMoneyForPlayer(player, totalCents) {
-    return hasCompactMoney(player) ? formatCentsCompact(totalCents) : formatCents(totalCents);
+    return formatDisplayMoney(totalCents, getDisplayOptions(player), hasCompactMoney(player));
+}
+
+const preferenceKey = "lilymoney:display_options";
+const options = {
+    smart: false,
+    cents: "Always",
+    group: "None",
+    decimal: "Period",
+    color: "White",
+    boldBalance: true,
+    confirmBuy: true,
+    effect: "XP Orb",
+    combine: true,
+    animate: true,
+    job: true,
+    shop: true,
+    auction: true,
+    payment: true,
+    admin: true,
+    other: true,
+    spending: true,
+    names: true,
+    quantity: true,
+    volume: 100,
+    receiveSound: true,
+    spendSound: true,
+    jobSound: true,
+    auctionSound: true,
+    combineSound: false,
+};
+function overrides(player) {
+    return JSON.parse(player.getDynamicProperty?.(preferenceKey) ?? "{}");
+}
+export function getDisplayOptions(player) {
+    const { notifications, duration } = getMoneyPersonalDefaults();
+    return { ...options, notifications, duration, ...overrides(player) };
+}
+export function saveDisplayOptions(player, changes) {
+    player.setDynamicProperty(preferenceKey, JSON.stringify({ ...overrides(player), ...changes }));
 }

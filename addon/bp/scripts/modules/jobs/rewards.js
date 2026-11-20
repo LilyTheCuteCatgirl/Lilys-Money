@@ -1,15 +1,15 @@
+import { sendChat } from "../chat.js";
+import { configuredInterval } from "../settings/timing.js";
+import { serverOptions } from "../settings/server.js";
 import { niceIdName } from "../items/identifiers.js";
-import { CONFIG } from "../../config.js";
 import { system, world, Player } from "@minecraft/server";
 import { DP_MAX, getCompiledJob, protectsBreak } from "./storage.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../economy/balance.js";
 import { playMoneySound } from "../players/preferences.js";
 import { logMoneyEvent } from "../logging/moneylogging.js";
 
-const JOB_PLACED_BLOCK_CLEANUP_INTERVAL_TICKS = Math.max(1, Math.floor(Number(CONFIG.JOB_PLACED_BLOCK_CLEANUP_INTERVAL_TICKS ?? 200)));
 const JOB_TAG_PREFIX = "job:";
 const JOB_STATS_DP_KEY = `lilymoney:job_stats_v1`;
-const JOB_STATS_FLUSH_INTERVAL_TICKS = Math.max(1, Math.floor(Number(CONFIG.JOB_STATS_FLUSH_INTERVAL_TICKS ?? 400)));
 const PLACED_TTL_TICKS = 20 * 60 * 30;
 const _placedBlocks = new Map();
 
@@ -46,7 +46,7 @@ function _consumePlaced(dimId, loc) {
     _placedBlocks.delete(_posKey(dimId, loc));
 }
 
-system.runInterval(() => {
+configuredInterval("cleanup", () => {
     const now = system.currentTick;
     let removed = 0;
 
@@ -60,7 +60,7 @@ system.runInterval(() => {
         // Spread large cleanups across ticks.
         if (removed >= 2000) break;
     }
-}, JOB_PLACED_BLOCK_CLEANUP_INTERVAL_TICKS);
+});
 
 // These crops only earn break rewards at full maturity.
 const MATURE_RULES = {
@@ -110,6 +110,22 @@ export function getCurrentJobId(player) {
 }
 
 export function setJob(player, jobIdOrNull) {
+    const options = serverOptions();
+    if (!options.jobs) {
+        sendChat(player, "Jobs are disabled.");
+        return false;
+    }
+    const now = Date.now();
+    const last = Number(player.getDynamicProperty?.("lilymoney:last_job_change") ?? 0);
+    const remainingSeconds = Math.ceil((options.cooldown * 60000 - (now - last)) / 1000);
+    if (remainingSeconds > 0 && options.cooldown > 0) {
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = remainingSeconds % 60;
+        const remaining = minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        sendChat(player, `You can change jobs again in ${remaining}.`);
+        return false;
+    }
+    player.setDynamicProperty?.("lilymoney:last_job_change", now);
     for (const t of player.getTags()) {
         if (t.startsWith(JOB_TAG_PREFIX)) {
             try {
@@ -124,6 +140,7 @@ export function setJob(player, jobIdOrNull) {
     }
 
     if (player?.id) _jobIdCacheByPlayerId.set(player.id, jobIdOrNull || null);
+    return true;
 }
 
 try {
@@ -175,7 +192,7 @@ function markEarn(player, jobId, kind, id, centsEarned, count = 1) {
     _statsDirty = true;
 }
 
-system.runInterval(() => {
+configuredInterval("stats", () => {
     if (!_statsDirty) return;
 
     try {
@@ -208,7 +225,7 @@ system.runInterval(() => {
 
     _statsBuffer = {};
     _statsDirty = false;
-}, JOB_STATS_FLUSH_INTERVAL_TICKS);
+});
 
 function payout(player, centsEarned, kind, id) {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
@@ -217,12 +234,13 @@ function payout(player, centsEarned, kind, id) {
     const verb = { break: "Mined", place: "Placed", kill: "Killed", pickup: "Picked up" }[kind];
     setBalanceFromTotalCents(dollarsObj, centsObj, player, next, `${verb} ${niceIdName(id)}`.toLowerCase(), `job:${kind}:${id}`);
 
-    playMoneySound(player);
+    playMoneySound(player, "job");
 
     return next;
 }
 
 function handleReward(player, kind, id, count = 1) {
+    if (!serverOptions().jobs) return;
     if (!(player instanceof Player)) return;
     if (!id) return;
     if (count <= 0) return;

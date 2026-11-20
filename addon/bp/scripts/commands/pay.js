@@ -1,3 +1,5 @@
+import { sendChat, chatText } from "../modules/chat.js";
+import { serverOptions } from "../modules/settings/server.js";
 import { notifyHudReceipt } from "../modules/hud/manager.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
@@ -46,25 +48,26 @@ export function registerPayCommand(customCommandRegistry) {
             const source = getCommandSource(origin);
 
             if (isCommandBlock(origin) || !(source instanceof Player)) {
-                return { status: CustomCommandStatus.Failure, message: "Player-only. Command blocks/console cannot use /pay." };
+                return { status: CustomCommandStatus.Failure, message: chatText("Player-only. Command blocks/console cannot use /pay.") };
             }
 
             const parsedAmount = parseFloatToCents(amountFloat, false);
-            if (!parsedAmount.ok) return { status: CustomCommandStatus.Failure, message: parsedAmount.error };
+            if (!parsedAmount.ok) return { status: CustomCommandStatus.Failure, message: chatText(parsedAmount.error) };
             const amount = parsedAmount.cents;
-            if (amount <= 0) return { status: CustomCommandStatus.Failure, message: "Amount must be > 0." };
+            if (amount <= 0) return { status: CustomCommandStatus.Failure, message: chatText("Amount must be > 0.") };
 
             const resolved = resolvePaySelectorTarget(source, targetRaw);
             if (!resolved.ok) {
                 return {
                     status: CustomCommandStatus.Failure,
-                    message: resolved.error,
+                    message: chatText(resolved.error),
                 };
             }
 
             const target = resolved.player;
 
             system.run(() => {
+                if (!serverOptions().pay) return reply(origin, "Player payments are disabled.");
                 const { dollarsObj, centsObj } = ensureMoneyObjectives();
                 if (!dollarsObj || !centsObj) return;
 
@@ -92,11 +95,11 @@ export function registerPayCommand(customCommandRegistry) {
                 });
 
                 reply(origin, `§aPaid §f${target.name} §e${formatCents(amount)}§a. New balance: §e${formatCents(senderBal - amount)}§a.`);
-                playMoneySound(source);
+                playMoneySound(source, "spend");
                 playMoneySound(target);
-                target.sendMessage(
-                    "§r<§dLily's Money§r> §r" +
-                        `§aYou received §e${formatCents(amount)}§a from §f${source.name}§a. New balance: §e${formatCents(targetBal + amount)}§a.`,
+                sendChat(
+                    target,
+                    `§aYou received §e${formatCents(amount)}§a from §f${source.name}§a. New balance: §e${formatCents(targetBal + amount)}§a.`,
                 );
             });
 

@@ -1,3 +1,4 @@
+import { chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, Player, CustomCommandStatus, system, world } from "@minecraft/server";
 import { getCommandSource } from "../modules/commandSource.js";
 import { openShopEntry } from "../modules/shop/ui.js";
@@ -17,7 +18,7 @@ export function registerShopCommand(customCommandRegistry) {
             if (!(src instanceof Player)) {
                 return {
                     status: CustomCommandStatus.Failure,
-                    message: "Only players can open the shop.",
+                    message: chatText("Only players can open the shop."),
                 };
             }
 

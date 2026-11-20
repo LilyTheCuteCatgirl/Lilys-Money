@@ -208,7 +208,7 @@ async function captureHud(f) {
     return (player) => {
         for (const timer of f.intervals.values()) if (timer.ticks === 1) timer.callback();
         const [wallet, ...rows] = titles.get(player).split("\n");
-        assert.equal(wallet.slice("~LM3:B§l".length).trim(), formatCents(f.balance(player)));
+        assert.equal(wallet.slice("~LM3:B§f§l".length).trim(), formatCents(f.balance(player)));
         return rows.map((row) => row.slice(1).replace(/~+$/, "").replace(/§./g, ""));
     };
 }
@@ -362,6 +362,7 @@ test("a disabled HUD does not replay earlier payments on enable", async (t) => {
     const f = await commerceFixture(t),
         read = await captureHud(f);
     const { syncMoneyHud } = await f.load("scripts/modules/hud/manager.js");
+    (await f.load("scripts/modules/players/preferences.js")).setMoneyPersonalDefaults({ notifications: false });
     f.buyer.hasTag = (tag) => tag === f.CONFIG.PLAYER_HUD_OFF_TAG;
     syncMoneyHud(f.buyer);
     await command(f, "pay", "registerPayCommand", { sourceEntity: f.buyer }, [f.seller], 1.25);
@@ -430,4 +431,65 @@ test("normalization preserves an existing balance without a HUD card", async (t)
     f.system.currentTick += 20;
     assert.equal(f.balance(f.buyer), 988);
     assert.deepEqual(read(f.buyer), []);
+});
+
+test("turning auctions off preserves ownership, deadlines and recovery", async (t) => {
+    const f = await auctionFixture(t);
+    const { saveServerOptions } = await f.load("scripts/modules/settings/server.js");
+    saveServerOptions({ days: 1, collect: 7 });
+    f.list();
+    const listing = f.loadAh().auctions[0];
+    assert.equal(listing.expiresAt, 1728000);
+    assert.equal(listing.collectUntil, 8 * 1728000);
+    saveServerOptions({ auctions: false, days: 30, collect: 100 });
+    f.buyAuction(f.buyer, listing.id);
+    assert.equal(f.balance(f.buyer), 1000);
+    assert.deepEqual(f.loadAh().auctions[0], listing);
+    f.cancelAuction(f.seller, listing.id);
+    f.list();
+    assert.equal(f.loadAh().auctions.length, 0);
+    assert.equal(f.seller.inventory.getItem(0).amount, 2);
+});
+test("disabled payments leave both wallets untouched", async (t) => {
+    const f = await commerceFixture(t);
+    (await f.load("scripts/modules/settings/server.js")).saveServerOptions({ pay: false });
+    await command(f, "pay", "registerPayCommand", { sourceEntity: f.buyer }, [f.seller], 1);
+    assert.equal(f.balance(f.buyer), 1000);
+    assert.equal(f.balance(f.seller), 0);
+});
+
+test("shop policy changed during a purchase takes effect before settlement", async (t) => {
+    const f = await shopFixture(t);
+    const { saveServerOptions } = await f.load("scripts/modules/settings/server.js");
+    f.forms(2, () => saveServerOptions({ maxItems: 1 }));
+    await f.flowBuy(f.buyer, offer);
+    assert.equal(f.balance(f.buyer), 1000);
+    assert.equal(f.buyer.inventory.getItem(0), undefined);
+    saveServerOptions({ confirm: false });
+    f.forms(1, () => assert.fail("unexpected confirmation"));
+    await f.flowBuy(f.buyer, offer);
+    assert.equal(f.balance(f.buyer), 875);
+    saveServerOptions({ sell: false });
+    await f.flowSell(f.buyer, offer);
+    assert.equal(f.buyer.inventory.getItem(0).amount, 1);
+});
+
+test("skipping a purchase confirmation is personal and leaves sale confirmation enabled", async (t) => {
+    const f = await shopFixture(t);
+    const { saveDisplayOptions, getDisplayOptions } = await f.load("scripts/modules/players/preferences.js");
+    const props = new Map();
+    f.buyer.setDynamicProperty = (k, v) => props.set(k, v);
+    f.buyer.getDynamicProperty = (k) => props.get(k);
+    saveDisplayOptions(f.buyer, { confirmBuy: false });
+    assert.equal(getDisplayOptions(f.seller).confirmBuy, true);
+    f.forms(1, () => assert.fail("unexpected buy confirmation"));
+    await f.flowBuy(f.buyer, offer);
+    assert.equal(f.balance(f.buyer), 875);
+    let asked = false;
+    f.forms(1, () => {
+        asked = true;
+    });
+    await f.flowSell(f.buyer, offer);
+    assert.equal(asked, true);
+    assert.equal(f.balance(f.buyer), 910);
 });

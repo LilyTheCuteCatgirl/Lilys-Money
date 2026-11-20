@@ -1,3 +1,4 @@
+import { chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 
 import { ActionFormData } from "@minecraft/server-ui";
@@ -361,7 +362,7 @@ export function registerMoneyHelpCommand(customCommandRegistry) {
             if (!(player instanceof Player)) {
                 return {
                     status: CustomCommandStatus.Failure,
-                    message: "Only players can use /moneyhelp.",
+                    message: chatText("Only players can use /moneyhelp."),
                 };
             }
 

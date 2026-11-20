@@ -1,11 +1,11 @@
+import { configuredInterval } from "../settings/timing.js";
+import { serverOptions } from "../settings/server.js";
 import { CONFIG } from "../../config.js";
 import { isPotionItem, normalizeTemplate } from "../items/templates.js";
 import { isShulkerBoxId, stripColors, niceIdName, searchTokens } from "../items/identifiers.js";
 import { loadAh, saveAh } from "./storage.js";
-import { getAhNowTicks, AH_EXPIRED_COLLECT_TICKS, advanceAhClock, AH_CLOCK_INTERVAL_TICKS } from "./clock.js";
-import { system } from "@minecraft/server";
+import { getAhNowTicks, AH_EXPIRED_COLLECT_TICKS, advanceAhClock } from "./clock.js";
 
-export const AH_MAX_ACTIVE_PER_PLAYER = Math.max(1, Math.floor(Number(CONFIG.AH_MAX_ACTIVE_PER_PLAYER ?? 20)));
 export const AH_MAX_EXPIRED_PER_PLAYER = Math.max(1, Math.floor(Number(CONFIG.AH_MAX_EXPIRED_PER_PLAYER ?? 20)));
 
 export function nextAuctionId(ah) {
@@ -55,6 +55,7 @@ function enforceExpiredCapForSeller(ah, sellerIdentityId) {
 }
 
 export function processAhExpirations() {
+    if (!serverOptions().auctions) return;
     const ah = loadAh();
     const now = getAhNowTicks();
     let changed = false;
@@ -63,7 +64,7 @@ export function processAhExpirations() {
     for (const a of ah.auctions) {
         if (a.status === "active" && now >= a.expiresAt) {
             a.status = "expired";
-            a.collectUntil = now + AH_EXPIRED_COLLECT_TICKS;
+            a.collectUntil = now + (a.collectUntil > a.expiresAt ? a.collectUntil - a.expiresAt : AH_EXPIRED_COLLECT_TICKS);
             touchedSellers.add(String(a.sellerIdentityId));
             changed = true;
         }
@@ -95,16 +96,17 @@ export function searchAuctions(query) {
     const tokens = searchTokens(query);
     const active = ah.auctions.filter((a) => a.status === "active");
 
-    if (!tokens.length) {
-        return active.sort((a, b) => b.createdAt - a.createdAt);
-    }
-
-    return active
-        .filter((a) => {
-            const text = buildSearchText(a);
-            return tokens.every((token) => text.includes(token));
-        })
-        .sort((a, b) => a.price - b.price || b.createdAt - a.createdAt);
+    const matches = tokens.length
+        ? active.filter((a) => {
+              const text = buildSearchText(a);
+              return tokens.every((token) => text.includes(token));
+          })
+        : active;
+    const sort = serverOptions().sort;
+    return matches.sort(
+        (a, b) =>
+            (sort === "Cheapest" ? a.price - b.price : sort === "Most Expensive" ? b.price - a.price : 0) || b.createdAt - a.createdAt,
+    );
 }
 
 export function findAuctionById(id) {
@@ -112,14 +114,15 @@ export function findAuctionById(id) {
     return ah.auctions.find((a) => a.id === String(id)) ?? null;
 }
 
-system.runInterval(() => {
+configuredInterval("expiry", (ticks) => {
     try {
-        advanceAhClock();
+        if (!serverOptions().auctions) return;
+        advanceAhClock(ticks);
         processAhExpirations();
     } catch (error) {
         console.warn(`[AH] Clock or expiry update failed: ${error}`);
     }
-}, AH_CLOCK_INTERVAL_TICKS);
+});
 
 export function auctionTitle(a) {
     const t = normalizeTemplate(a?.template);

@@ -103,9 +103,7 @@ export function getStartMoneyCents() {
 
 export function setStartMoneyCents(cents) {
     const c = Math.max(0, Math.floor(Number(cents) || 0));
-    try {
-        world.setDynamicProperty(CONFIG.START_MONEY_CENTS_DP_KEY, c);
-    } catch {}
+    world.setDynamicProperty(CONFIG.START_MONEY_CENTS_DP_KEY, c);
     return c;
 }
 

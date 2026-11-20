@@ -1,6 +1,7 @@
+import { chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { ensureMoneyObjectives, getBalanceCents } from "../modules/economy/balance.js";
-import { formatCents } from "../modules/economy/formatting.js";
+import { formatMoneyForPlayer } from "../modules/players/preferences.js";
 import { getCommandSource, reply } from "../modules/commandSource.js";
 
 function resolveBalanceSelectorTarget(source, targetArg) {
@@ -30,14 +31,14 @@ function resolveBalanceSelectorTarget(source, targetArg) {
 function handleBalance(origin, targetRaw) {
     const source = getCommandSource(origin);
     if (!(source instanceof Player)) {
-        return { status: CustomCommandStatus.Failure, message: "Only players can use /balance." };
+        return { status: CustomCommandStatus.Failure, message: chatText("Only players can use /balance.") };
     }
 
     const resolved = resolveBalanceSelectorTarget(source, targetRaw);
     if (!resolved.ok) {
         return {
             status: CustomCommandStatus.Failure,
-            message: resolved.error,
+            message: chatText(resolved.error),
         };
     }
 
@@ -51,7 +52,7 @@ function handleBalance(origin, targetRaw) {
         }
 
         const total = getBalanceCents(dollarsObj, centsObj, target);
-        reply(origin, `§f${target.name}§8: §e${formatCents(total)}`);
+        reply(origin, `§f${target.name}§8: §e${formatMoneyForPlayer(source, total)}`);
     });
 
     return { status: CustomCommandStatus.Success };

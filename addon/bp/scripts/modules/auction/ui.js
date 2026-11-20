@@ -1,3 +1,4 @@
+import { serverOptions } from "../settings/server.js";
 import { CONFIG } from "../../config.js";
 import { parseFloatToCents, formatCents } from "../economy/formatting.js";
 import { AH_MAX_PRICE_CENTS, loadAh } from "./storage.js";
@@ -10,7 +11,6 @@ import {
     searchAuctions,
     findAuctionById,
     getPlayerAuctions,
-    AH_MAX_ACTIVE_PER_PLAYER,
     AH_MAX_EXPIRED_PER_PLAYER,
 } from "./listings.js";
 import { normalizeTemplate, stackToTemplate, isPotionItem } from "../items/templates.js";
@@ -129,6 +129,7 @@ function describeStack(stack) {
 }
 
 export async function openAhEntry(player, rawArg = "") {
+    if (!serverOptions().auctions) return openMyAhItems(player);
     processAhExpirations();
 
     const arg = String(rawArg ?? "").trim();
@@ -283,7 +284,7 @@ async function openMyAhItems(player, page = 0) {
     const form = new ActionFormData()
         .title(ahTitle("My AH Items"))
         .body(
-            `§lActive: §f${activeCount}/${AH_MAX_ACTIVE_PER_PLAYER} §l| Expired: §f${expiredCount}/${AH_MAX_EXPIRED_PER_PLAYER}\n§lPage ${page + 1}/${totalPages}`,
+            `§lActive: §f${activeCount}/${serverOptions().active} §l| Expired: §f${expiredCount}/${AH_MAX_EXPIRED_PER_PLAYER}\n§lPage ${page + 1}/${totalPages}`,
         );
 
     const actions = [];
@@ -312,10 +313,9 @@ async function openMyAhItems(player, page = 0) {
     actions.push({ type: "back" });
 
     const res = await form.show(player);
-    if (res.canceled) return openAhBrowse(player, "", 0);
-
+    if (res.canceled || actions[res.selection]?.type === "back") return serverOptions().auctions ? openAhBrowse(player, "", 0) : undefined;
     const action = actions[res.selection];
-    if (!action || action.type === "back") return openAhBrowse(player, "", 0);
+    if (!action) return;
     if (action.type === "page") return openMyAhItems(player, action.page);
     if (action.type === "view") return openAuctionDetails(player, action.id, { type: "my", page });
 }

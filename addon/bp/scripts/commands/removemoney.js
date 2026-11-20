@@ -1,3 +1,4 @@
+import { sendChat, chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
@@ -21,14 +22,14 @@ export function registerRemoveMoneyCommand(customCommandRegistry) {
             if (!isAdminOrCommandBlock(origin)) {
                 return {
                     status: CustomCommandStatus.Failure,
-                    message: `Only admins (tag: ${CONFIG.ADMIN_TAG}) or command blocks can use this.`,
+                    message: chatText(`Only admins (tag: ${CONFIG.ADMIN_TAG}) or command blocks can use this.`),
                 };
             }
-            if (!targets || targets.length === 0) return { status: CustomCommandStatus.Failure, message: "No target selected." };
+            if (!targets || targets.length === 0) return { status: CustomCommandStatus.Failure, message: chatText("No target selected.") };
 
             const parsed = parseFloatToCents(amountFloat, false);
-            if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: parsed.error };
-            if (parsed.cents <= 0) return { status: CustomCommandStatus.Failure, message: "Amount must be > 0." };
+            if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: chatText(parsed.error) };
+            if (parsed.cents <= 0) return { status: CustomCommandStatus.Failure, message: chatText("Amount must be > 0.") };
 
             system.run(() => {
                 const { dollarsObj, centsObj } = ensureMoneyObjectives();
@@ -46,9 +47,7 @@ export function registerRemoveMoneyCommand(customCommandRegistry) {
                         balanceAfter: next,
                     });
 
-                    p.sendMessage(
-                        "§r<§dLily's Money§r> §r" + `§aRemoved §e${formatCents(parsed.cents)}§a. New balance: §e${formatCents(next)}§a.`,
-                    );
+                    sendChat(p, `§aRemoved §e${formatCents(parsed.cents)}§a. New balance: §e${formatCents(next)}§a.`);
                 }
 
                 const src = getCommandSource(origin);

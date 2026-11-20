@@ -71,3 +71,16 @@ export function formatCentsCompact(totalCents) {
     const num = rounded.toFixed(1).replace(/\.0$/, "");
     return `${sign}$${num}${unit.s}`;
 }
+
+// Smart keeps exact amounts below one million dollars. Compact starts at one thousand.
+export function formatDisplayMoney(cents, options = {}, compact = false) {
+    const shorten = options.smart ? Math.abs(cents) >= 100000000 : compact;
+    const text = shorten ? formatCentsCompact(cents) : formatCents(cents);
+    const decimal = options.decimal === "Comma" ? "," : ".";
+    if (/[kmbt]$/.test(text)) return text.replace(".", decimal);
+    const [integer, fraction] = text.split(".");
+    const separator = { Comma: ",", Period: ".", Space: " " }[options.group];
+    const grouped = separator ? integer.replace(/\B(?=(\d{3})+(?!\d))/g, separator) : integer;
+    if (options.cents === "Never" || (options.cents === "Hide .00" && fraction === "00")) return grouped;
+    return grouped + decimal + fraction;
+}

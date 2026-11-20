@@ -10,6 +10,7 @@ function displayLines(title) {
 
 test("the default HUD follows personal settings through respawn, reconnect and re-enable", async (t) => {
     const { load, world, buyer, dollars, intervals, scheduled, system } = await commerceFixture(t);
+    await load("scripts/modules/ui/8crafterUiAuto.js");
     const { registerMoneySettingsCommand } = await load("scripts/commands/moneysettings.js");
     const tags = new Set();
     buyer.hasTag = (tag) => tags.has(tag);
@@ -30,13 +31,16 @@ test("the default HUD follows personal settings through respawn, reconnect and r
         return this;
     };
     ModalFormData.prototype.dropdown = function (label, choices, options) {
-        assert.equal(label, "HUD position");
-        assert.deepEqual(choices, ["Top right", "Top left", "Bottom right", "Bottom left"]);
+        if (label === "HUD Position") assert.deepEqual(choices, ["Top right", "Top left", "Bottom right", "Bottom left"]);
         assert.ok(options.defaultValueIndex >= 0);
         return this;
     };
     async function save(enabled, compact = false, corner = 0) {
-        buyer.nextForm = () => ({ formValues: [enabled, corner, true, compact] });
+        const sequence = [0, 0, { formValues: [enabled, corner] }, 2, 3, { formValues: [Number(compact), 0, 0, 0] }, 5];
+        buyer.nextForm = () => {
+            const next = sequence.shift();
+            return typeof next === "number" ? { selection: next } : next;
+        };
         open({ sourceEntity: buyer });
         await scheduled.pop()();
     }
@@ -53,8 +57,9 @@ test("the default HUD follows personal settings through respawn, reconnect and r
     assert.equal(prefs.hasMoneyHud(buyer), false);
     assert.equal(prefs.getHudPosition(buyer), "Bottom left");
     prefs.setMoneyPersonalDefaults({ hud: true, position: "Top right" });
+    prefs.setMoneyPersonalDefaults({ notifications: false });
     await save(false);
-    assert.equal(toggles.get("§rMoney HUD"), true);
+    assert.equal(toggles.get("Enable Money HUD"), true);
     assert.equal(titles.at(-1), "~LM3:R");
     assert.equal(
         [...intervals.values()].some((timer) => timer.ticks === 1),
@@ -66,8 +71,9 @@ test("the default HUD follows personal settings through respawn, reconnect and r
         [...intervals.values()].some((timer) => timer.ticks === 1),
         false,
     );
+    prefs.setMoneyPersonalDefaults({ notifications: true });
     await save(true);
-    assert.equal(toggles.get("§rMoney HUD"), false);
+    assert.equal(toggles.get("Enable Money HUD"), false);
     pulse();
     assert.match(titles.at(-1), /\$10\.00$/);
     system.currentTick += 20;
@@ -76,15 +82,15 @@ test("the default HUD follows personal settings through respawn, reconnect and r
     const reward = titles.at(-1).split("\n")[1];
     await save(true, true);
     pulse();
-    assert.equal(titles.at(-1).split("\n")[0].trimEnd(), "~LM3:B§l" + "$1.3k".padStart(16));
+    assert.equal(titles.at(-1).split("\n")[0].trimEnd(), "~LM3:B§f§l" + "$1.3k".padStart(16));
     assert.equal(titles.at(-1).split("\n")[1], reward);
     await save(true, false);
     pulse();
-    assert.equal(titles.at(-1).split("\n")[0], "~LM3:B§l" + "$1250.00".padStart(16));
+    assert.equal(titles.at(-1).split("\n")[0], "~LM3:B§f§l" + "$1250.00".padStart(16));
     for (const [i, route] of [..."BCDE"].entries()) {
         await save(true, false, i);
         pulse();
-        assert.ok(titles.at(-1).startsWith("~LM3:" + route + "§l"));
+        assert.ok(titles.at(-1).startsWith("~LM3:" + route + "§f§l"));
         assert.equal(titles.at(-1).split("\n")[1], reward);
     }
     world.afterEvents.playerSpawn.emit({ player: buyer, initialSpawn: false });
@@ -101,10 +107,19 @@ test("existing worlds default the HUD on independently of actionbar; personal ov
     const f = await commerceFixture(t);
     f.properties.set(f.CONFIG.MONEY_PERSONAL_DEFAULTS_DP_KEY, JSON.stringify({ actionbar: false, sound: false, compact: true }));
     const { getMoneyPersonalDefaults, setMoneyPersonalDefaults, hasMoneyHud } = await f.load("scripts/modules/players/preferences.js");
-    assert.deepEqual(getMoneyPersonalDefaults(), { hud: true, position: "Top right", sound: false, compact: true });
-    setMoneyPersonalDefaults({ hud: false });
+    assert.deepEqual(getMoneyPersonalDefaults(), {
+        hud: true,
+        notifications: true,
+        duration: 3,
+        position: "Top right",
+        sound: false,
+        compact: true,
+    });
+    setMoneyPersonalDefaults({ hud: false, notifications: false });
     assert.deepEqual(JSON.parse(f.properties.get(f.CONFIG.MONEY_PERSONAL_DEFAULTS_DP_KEY)), {
         hud: false,
+        notifications: false,
+        duration: 3,
         position: "Top right",
         sound: false,
         compact: true,
@@ -123,7 +138,7 @@ test("existing worlds default the HUD on independently of actionbar; personal ov
     };
     tickMoneyDisplay();
     for (const timer of f.intervals.values()) if (timer.ticks === 1) timer.callback();
-    assert.deepEqual(sent, ["~LM3:B§l          $10.00"]);
+    assert.deepEqual(sent, ["~LM3:B§f§l          $10.00"]);
 });
 
 test("the title itself carries the unencoded wallet and each visible earning", () => {
@@ -136,10 +151,10 @@ test("the title itself carries the unencoded wallet and each visible earning", (
     updateHud(state, 1, send);
     observeBalance(state, 321, 2, "Shop sale");
     updateHud(state, 2, send);
-    assert.deepEqual(displayLines(frames.at(-1)), ["~LM3:B§l           $3.21", "§aJob reward §2§l+1.00", "§aShop sale §2§l+2.01"]);
+    assert.deepEqual(displayLines(frames.at(-1)), ["~LM3:B§f§l           $3.21", "§aJob reward §2§l+1.00", "§aShop sale §2§l+2.01"]);
     observeBalance(state, undefined, 6);
     updateHud(state, 6, send);
-    assert.deepEqual(displayLines(frames.at(-1)), ["~LM3:B§l           $3.21", "§aJob reward §2§l+1.00", "§aShop sale §2§l+2.01"]);
+    assert.deepEqual(displayLines(frames.at(-1)), ["~LM3:B§f§l           $3.21", "§aJob reward §2§l+1.00", "§aShop sale §2§l+2.01"]);
 });
 
 test("a reward stays legible through the full hold and leaves the next reward below the wallet", () => {
@@ -196,7 +211,7 @@ test("failed sends retry, sessions stay isolated, and idle refresh keeps an unch
     updateHud(a, 601, send);
     assert.deepEqual(
         result.map((x) => x[0]),
-        ["~LM3:B§l          -$0.01", "~LM3:B§l  $2147483647.99", "~LM3:B§l          -$0.01"],
+        ["~LM3:B§f§l          -$0.01", "~LM3:B§f§l  $2147483647.99", "~LM3:B§f§l          -$0.01"],
     );
 });
 
@@ -212,7 +227,7 @@ test("six live and cached notification boxes extract the correct UTF-8 rows bene
     assert.equal(label.anchor_to, "$corner");
     assert.equal(
         label.bindings.find((b) => b.target_property_name === "#text").source_property_name,
-        "(((((('%.25s' * #hud_title_text_string) - $route) - '        ') - '    ') - '  ') - ' ')",
+        "((((((('%.28s' * #hud_title_text_string) - $route) - '______________________') - '        ') - '    ') - '  ') - ' ')",
     );
     const state = newHudSession();
     observeBalance(state, 0, 0);
@@ -275,7 +290,7 @@ test("a paid block and kill in one tick reach the next HUD frame individually, e
     const { syncMoneyHud } = await load("scripts/modules/hud/manager.js");
     syncMoneyHud(buyer);
     tick(1);
-    assert.equal(title, "~LM3:B§l          $10.00");
+    assert.equal(title, "~LM3:B§f§l          $10.00");
     world.afterEvents.playerBreakBlock.emit({
         player: buyer,
         block: { typeId: "minecraft:stone", dimension: { id: "overworld" }, location: { x: 1, y: 2, z: 3 } },
@@ -284,7 +299,7 @@ test("a paid block and kill in one tick reach the next HUD frame individually, e
     system.currentTick++;
     tick(1);
     assert.equal(balance(buyer), 1135);
-    assert.deepEqual(displayLines(title), ["~LM3:B§l          $11.35", "§amined stone §cx1 §2§l+1.25", "§akilled zombie §2§l+0.10"]);
+    assert.deepEqual(displayLines(title), ["~LM3:B§f§l          $11.35", "§amined stone §cx1 §2§l+1.25", "§akilled zombie §2§l+0.10"]);
     system.currentTick++;
     tick(1);
     assert.equal(displayLines(title).length, 3);
@@ -294,7 +309,7 @@ test("a paid block and kill in one tick reach the next HUD frame individually, e
     tick(1);
     assert.equal(balance(buyer), 1645);
     assert.deepEqual(displayLines(title), [
-        "~LM3:B§l          $16.45",
+        "~LM3:B§f§l          $16.45",
         "§amined stone §cx1 §2§l+1.25",
         "§akilled zombie §cx2 §2§l+0.20",
         "§aMoney received §2§l+5.00",
@@ -326,8 +341,8 @@ test("header byte boundary separates each valid balance from smaller multiline t
         enqueueCard(s, 1, "Sold Émeraude", 0);
         updateHud(s, 0, (title) => {
             const b = Buffer.from(title);
-            assert.equal(b[25], 10);
-            assert.equal(b.subarray(26).toString(), "A§aSold Émeraude §2§l+0.01");
+            assert.equal(b[28], 10);
+            assert.equal(b.subarray(29).toString(), "A§aSold Émeraude §2§l+0.01");
         });
     }
 });
@@ -455,7 +470,7 @@ test("idle HUD samples one score pair per 20 ticks and resends its cached wallet
         pulse();
     }
     assert.equal(reads, 62);
-    assert.deepEqual(titles, ["~LM3:B§l          $10.00", "~LM3:B§l          $10.00"]);
+    assert.deepEqual(titles, ["~LM3:B§f§l          $10.00", "~LM3:B§f§l          $10.00"]);
 });
 
 test("stable cards skip title assembly until their exit begins", () => {
@@ -488,6 +503,7 @@ test("HUD visibility ignores legacy actionbar tags and cleanup respects other ob
     clearLegacyMoneyDisplaySlots();
     assert.deepEqual(cleared, ["belowname"]);
     f.online.push(f.buyer);
+    (await f.load("scripts/modules/players/preferences.js")).setMoneyPersonalDefaults({ notifications: false });
     for (const hud of [true, false])
         for (const bar of [true, false]) {
             const tags = [
@@ -513,6 +529,7 @@ test("HUD visibility ignores legacy actionbar tags and cleanup respects other ob
 
 test("admin defaults select the HUD and corner for unconfigured players, and personal selections override both", async (t) => {
     const f = await commerceFixture(t);
+    await f.load("scripts/modules/ui/8crafterUiAuto.js");
     const { registerMoneySettingsCommand } = await f.load("scripts/commands/moneysettings.js");
     const { ModalFormData } = await f.load("node_modules/@minecraft/server-ui/index.js");
     const { getHudPosition, hasMoneyHud, setHudPosition, setMoneyHud } = await f.load("scripts/modules/players/preferences.js");
@@ -523,11 +540,17 @@ test("admin defaults select the HUD and corner for unconfigured players, and per
     };
     ModalFormData.prototype.dropdown = function (name, values, options) {
         controls.push(name);
-        assert.equal(values[options.defaultValueIndex], "Top right");
+        if (name === "Default HUD Position") assert.equal(values[options.defaultValueIndex], "Top right");
         return this;
     };
     f.buyer.hasTag = (tag) => tag === f.CONFIG.ADMIN_TAG;
-    const replies = [{ selection: 0 }, { formValues: [false, 2, true, false, "0", false] }, { canceled: true }];
+    const replies = [
+        { selection: 1 },
+        { selection: 1 },
+        { formValues: [false, 2, true, 2, true, false] },
+        { selection: 7 },
+        { selection: 2 },
+    ];
     f.buyer.nextForm = () => replies.shift();
     let run;
     registerMoneySettingsCommand({
@@ -538,7 +561,7 @@ test("admin defaults select the HUD and corner for unconfigured players, and per
     run({ sourceEntity: f.buyer });
     await f.scheduled.pop()();
     assert.deepEqual(replies, []);
-    assert.deepEqual(controls.slice(0, 2), ["Default Money HUD", "Default HUD position"]);
+    assert.deepEqual(controls.slice(0, 2), ["HUD Enabled by Default", "Default HUD Position"]);
     assert.equal(hasMoneyHud(f.seller), false);
     assert.equal(getHudPosition(f.seller), "Bottom right");
     const tags = new Set();

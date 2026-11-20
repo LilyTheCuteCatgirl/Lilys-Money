@@ -1,3 +1,4 @@
+import { sendChat } from "../chat.js";
 import { templateKey, normalizeTemplate, templateHasCustomData } from "../items/templates.js";
 import { normalizeItemId, niceIdName, stripColors, shortItemName, searchTokens } from "../items/identifiers.js";
 import { filterActuallyApplicableEnchantments, mergeEnchantments } from "../items/enchantments.js";
@@ -228,5 +229,5 @@ export function getShopItemIcon(it) {
 }
 
 export function shopMessage(player, text) {
-    player.sendMessage("§r<§dLily's Money§r> §r" + text);
+    sendChat(player, text);
 }

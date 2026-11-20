@@ -1,3 +1,4 @@
+import { sendChat, chatText } from "../modules/chat.js";
 import { niceIdName } from "../modules/items/identifiers.js";
 import { notifyHudReceipt } from "../modules/hud/manager.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system, world } from "@minecraft/server";
@@ -90,28 +91,28 @@ export function registerSellCommand(customCommandRegistry) {
             if (!isAdminOrCommandBlock(origin)) {
                 return {
                     status: CustomCommandStatus.Failure,
-                    message: `Only admins (tag: ${CONFIG.ADMIN_TAG}) or command blocks can use this.`,
+                    message: chatText(`Only admins (tag: ${CONFIG.ADMIN_TAG}) or command blocks can use this.`),
                 };
             }
 
             if (!Number.isInteger(amountItems) || amountItems <= 0) {
-                return { status: CustomCommandStatus.Failure, message: "Item amount must be a positive whole number." };
+                return { status: CustomCommandStatus.Failure, message: chatText("Item amount must be a positive whole number.") };
             }
 
             const parsed = parseFloatToCents(priceFloat, false);
-            if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: parsed.error };
+            if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: chatText(parsed.error) };
             const unitPrice = parsed.cents;
-            if (unitPrice < 0) return { status: CustomCommandStatus.Failure, message: "Price must not be negative." };
+            if (unitPrice < 0) return { status: CustomCommandStatus.Failure, message: chatText("Price must not be negative.") };
 
             const target = resolveTarget(origin, targetRaw);
             if (!(target instanceof Player)) {
-                return { status: CustomCommandStatus.Failure, message: "Target must be an online player (name, @p, @r, @s)." };
+                return { status: CustomCommandStatus.Failure, message: chatText("Target must be an online player (name, @p, @r, @s).") };
             }
 
             const itemId = itemType.id;
             const totalPay = unitPrice * amountItems;
             if (!Number.isSafeInteger(totalPay)) {
-                return { status: CustomCommandStatus.Failure, message: "Total price is too large." };
+                return { status: CustomCommandStatus.Failure, message: chatText("Total price is too large.") };
             }
 
             system.run(() => {
@@ -120,19 +121,19 @@ export function registerSellCommand(customCommandRegistry) {
 
                 const inv = getInventoryContainer(target);
                 if (!inv) {
-                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cNo inventory container.");
+                    sendChat(target, "§cNo inventory container.");
                     return;
                 }
 
                 const have = countItems(inv, itemId);
                 if (have < amountItems) {
-                    target.sendMessage("§r<§dLily's Money§r> §r" + `§cNot enough §f${itemId}§c. You have §e${have}§c/${amountItems}.`);
+                    sendChat(target, `§cNot enough §f${itemId}§c. You have §e${have}§c/${amountItems}.`);
                     return;
                 }
 
                 const removed = removeItems(inv, itemId, amountItems);
                 if (removed < amountItems) {
-                    target.sendMessage("§r<§dLily's Money§r> §r" + "§cError removing items.");
+                    sendChat(target, "§cError removing items.");
                     return;
                 }
 
@@ -153,9 +154,9 @@ export function registerSellCommand(customCommandRegistry) {
                     balanceAfter: next,
                 });
 
-                target.sendMessage(
-                    "§r<§dLily's Money§r> §r" +
-                        `§2Sold §e${amountItems}§2 x §f${itemId}§2 for §e${formatCents(totalPay)}§2. Balance: §e${formatCents(next)}§2.`,
+                sendChat(
+                    target,
+                    `§2Sold §e${amountItems}§2 x §f${itemId}§2 for §e${formatCents(totalPay)}§2. Balance: §e${formatCents(next)}§2.`,
                 );
                 reply(origin, `§aTook §e${amountItems}§a x §f${itemId}§a from §f${target.name}§a and paid §e${formatCents(totalPay)}§a.`);
             });

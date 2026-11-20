@@ -1,16 +1,9 @@
+import { serverOptions } from "../settings/server.js";
 import { recordHudChange, settleAuctionSeller } from "../hud/manager.js";
 import { world } from "@minecraft/server";
-import {
-    getPlayerIdentityId,
-    sameSeller,
-    retainedListing,
-    auctionTitle,
-    countActivePlayerAuctions,
-    AH_MAX_ACTIVE_PER_PLAYER,
-    nextAuctionId,
-} from "./listings.js";
+import { getPlayerIdentityId, sameSeller, retainedListing, auctionTitle, countActivePlayerAuctions, nextAuctionId } from "./listings.js";
 import { loadAh, saveAh, AH_MAX_PRICE_CENTS } from "./storage.js";
-import { getAhNowTicks, AH_ACTIVE_TICKS, AH_EXPIRED_COLLECT_TICKS } from "./clock.js";
+import { getAhNowTicks, TICKS_PER_DAY } from "./clock.js";
 import { msg, queueAhSoldMessage, deliverAhSoldMessagesForIdentity } from "./notifications.js";
 import { getInventoryContainer } from "../inventory/items.js";
 import { getCapacityForTemplate, addTemplateItems, stackMatchesTemplate, takeFromSlot } from "../inventory/templateInventory.js";
@@ -33,6 +26,10 @@ function sellerTarget(auction, dollars, cents) {
 }
 
 export function buyAuction(player, auctionId) {
+    if (!serverOptions().auctions) {
+        msg(player, "Auction trading is disabled.");
+        return "back";
+    }
     const ah = loadAh();
     const index = ah.auctions.findIndex((a) => a.id === String(auctionId));
     const a = index >= 0 ? ah.auctions[index] : null;
@@ -97,7 +94,7 @@ export function buyAuction(player, auctionId) {
         player,
         `§2Bought §e${a.amount}§2 x §f${auctionTitle(a)}§2 for §e${formatCents(a.price)}§2. Balance: §e${formatCents(buyerBalanceAfter)}§2.`,
     );
-    playMoneySound(player);
+    playMoneySound(player, "spend");
 
     // Delivery is attempted now for online sellers. Offline sellers keep their queued notice until reconnecting.
     deliverAhSoldMessagesForIdentity(a.sellerIdentityId);
@@ -158,6 +155,7 @@ export function claimExpiredAuction(player, auctionId) {
 }
 
 export function listAuctionFromSlot(player, slotIndex, template, amount, priceCents) {
+    if (!serverOptions().auctions) return msg(player, "Auction trading is disabled.");
     if (
         !Number.isSafeInteger(amount) ||
         amount <= 0 ||
@@ -178,8 +176,8 @@ export function listAuctionFromSlot(player, slotIndex, template, amount, priceCe
 
     const ah = loadAh();
 
-    if (countActivePlayerAuctions(ah, player) >= AH_MAX_ACTIVE_PER_PLAYER) {
-        return msg(player, `§cYou already have ${AH_MAX_ACTIVE_PER_PLAYER} active auctions.`);
+    if (countActivePlayerAuctions(ah, player) >= serverOptions().active) {
+        return msg(player, `§cYou already have ${serverOptions().active} active auctions.`);
     }
 
     const current = inv.getItem(slotIndex);
@@ -198,8 +196,8 @@ export function listAuctionFromSlot(player, slotIndex, template, amount, priceCe
         amount,
         price: priceCents,
         createdAt: now,
-        expiresAt: now + AH_ACTIVE_TICKS,
-        collectUntil: now + AH_ACTIVE_TICKS + AH_EXPIRED_COLLECT_TICKS,
+        expiresAt: now + serverOptions().days * TICKS_PER_DAY,
+        collectUntil: now + serverOptions().days * TICKS_PER_DAY + serverOptions().collect * TICKS_PER_DAY,
         status: "active",
     };
 

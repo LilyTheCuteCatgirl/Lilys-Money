@@ -1,3 +1,4 @@
+import { sendChat, chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, setBalanceFromTotalCents } from "../modules/economy/balance.js";
@@ -23,20 +24,20 @@ export function registerSetMoneyCommand(customCommandRegistry) {
             if (!isAdminOrCommandBlock(origin)) {
                 return {
                     status: CustomCommandStatus.Failure,
-                    message: `Only admins (tag: ${CONFIG.ADMIN_TAG}) or command blocks can use this.`,
+                    message: chatText(`Only admins (tag: ${CONFIG.ADMIN_TAG}) or command blocks can use this.`),
                 };
             }
-            if (!targets || targets.length === 0) return { status: CustomCommandStatus.Failure, message: "No target selected." };
+            if (!targets || targets.length === 0) return { status: CustomCommandStatus.Failure, message: chatText("No target selected.") };
 
             const parsed = parseFloatToCents(amountFloat, true);
-            if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: parsed.error };
+            if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: chatText(parsed.error) };
 
             system.run(() => {
                 const { dollarsObj, centsObj } = ensureMoneyObjectives();
                 if (!dollarsObj || !centsObj) return;
 
                 for (const p of targets) {
-                    setBalanceFromTotalCents(dollarsObj, centsObj, p, parsed.cents, "Balance set");
+                    const delta = setBalanceFromTotalCents(dollarsObj, centsObj, p, parsed.cents, "Balance set");
 
                     logMoneyEvent("SET_MONEY", {
                         actor: origin,
@@ -45,8 +46,8 @@ export function registerSetMoneyCommand(customCommandRegistry) {
                         balanceAfter: parsed.cents,
                     });
 
-                    p.sendMessage("§r<§dLily's Money§r> §r" + `§aYour balance was set to §e${formatCents(parsed.cents)}§a.`);
-                    playMoneySound(p);
+                    sendChat(p, `§aYour balance was set to §e${formatCents(parsed.cents)}§a.`);
+                    playMoneySound(p, delta < 0 ? "spend" : "receive");
                 }
 
                 const src = getCommandSource(origin);

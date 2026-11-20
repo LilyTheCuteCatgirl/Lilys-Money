@@ -1,3 +1,4 @@
+import { chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, Player, CustomCommandStatus, system, world } from "@minecraft/server";
 import { getCommandSource } from "../modules/commandSource.js";
 import { openJobRoot } from "../modules/jobs/ui.js";
@@ -13,7 +14,7 @@ export function registerJobCommand(customCommandRegistry) {
         (origin) => {
             const src = getCommandSource(origin);
             if (!(src instanceof Player)) {
-                return { status: CustomCommandStatus.Failure, message: "Only players can use /job." };
+                return { status: CustomCommandStatus.Failure, message: chatText("Only players can use /job.") };
             }
             system.run(() => openJobRoot(src).catch((e) => console.warn(`[Job] UI error: ${e?.stack ?? e}`)));
             return { status: CustomCommandStatus.Success };

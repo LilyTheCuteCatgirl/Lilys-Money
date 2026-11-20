@@ -1,7 +1,9 @@
-import { formatCents, formatCentsCompact } from "../economy/formatting.js";
+import { formatCents, formatDisplayMoney } from "../economy/formatting.js";
 
 const ENTER = 4;
-const HOLD = 60;
+function hold(state) {
+    return (state.options?.duration ?? 3) * 20;
+}
 const EXIT_PHASES = "EFGHIJKL";
 const ROWS = 6;
 
@@ -12,15 +14,26 @@ export function newHudSession() {
 function expire(state, now) {
     state.rows = state.rows.filter((row) => now < row.holdUntil + EXIT_PHASES.length + 1);
     while (state.waiting.length && state.rows.length < ROWS) {
-        state.rows.push({ ...state.waiting.shift(), start: now, holdUntil: now + ENTER + HOLD });
+        state.rows.push({ ...state.waiting.shift(), start: now, holdUntil: now + ENTER + hold(state) });
     }
 }
 
+function cardGroup(description, key) {
+    if (key?.startsWith("job:")) return "job";
+    if (/^(Shop:|Bought |Sold )/.test(description)) return "shop";
+    if (description.startsWith("Auction:")) return "auction";
+    if (/^(Paid |Received from )/.test(description)) return "payment";
+    if (["Money added", "Money removed", "Balance set"].includes(description)) return "admin";
+    return "other";
+}
 export function enqueueCard(state, cents, description, now, key = description) {
+    const group = cardGroup(description, key);
+    const options = state.options ?? {};
+    if (options.notifications === false || options[group] === false || (cents < 0 && options.spending === false)) return;
     state.nextFrame = 0;
     expire(state, now);
     const sign = Math.sign(cents);
-    const matches = (row) => row.key === key && Math.sign(row.cents) === sign;
+    const matches = (row) => options.combine !== false && row.key === key && Math.sign(row.cents) === sign;
     const active = state.rows.find(matches);
     if (active) {
         active.count++;
@@ -29,7 +42,7 @@ export function enqueueCard(state, cents, description, now, key = description) {
             // Retrace only the part of the exit this card has already travelled.
             active.returnUntil = now + (now - active.holdUntil);
         }
-        active.holdUntil = Math.max(now, active.start + ENTER, active.returnUntil ?? 0) + HOLD;
+        active.holdUntil = Math.max(now, active.start + ENTER, active.returnUntil ?? 0) + hold(state);
         return;
     }
     const label = description
@@ -37,9 +50,9 @@ export function enqueueCard(state, cents, description, now, key = description) {
         .replace(/~LM3:/g, "")
         .trim()
         .slice(0, 60);
-    const row = { key, description: label, cents, count: 1 };
+    const row = { key, group, description: label, cents, count: 1 };
     if (state.rows.length < ROWS) {
-        state.rows.push({ ...row, start: now, holdUntil: now + ENTER + HOLD });
+        state.rows.push({ ...row, start: now, holdUntil: now + ENTER + hold(state) });
         return;
     }
     const queued = state.waiting.find(matches);
@@ -68,7 +81,7 @@ export function observeBalance(state, total, now, description, key) {
 }
 
 // Each nonfinal row occupies 256 UTF-8 bytes so JSON UI can extract its label independently.
-function notificationLine(row, now) {
+function notificationLine(row, now, options) {
     let phase = "S";
     if (now >= row.holdUntil || now < row.returnUntil) {
         const step = now >= row.holdUntil ? now - row.holdUntil : row.returnUntil - now;
@@ -76,11 +89,16 @@ function notificationLine(row, now) {
     } else if (now < row.start + ENTER) {
         phase = "ABCD"[now - row.start];
     }
+    if (options?.animate === false) phase = "S";
     const credit = row.cents > 0;
     const color = credit ? "§a" : "§c";
     const amount = (credit ? "+" : "") + formatCents(row.cents).replace("$", "");
-    const count = row.count > 1 || row.key.startsWith("job:break:") ? ` §cx${row.count}` : "";
-    return phase + color + row.description.replace(/~/g, "～") + count + (credit ? " §2§l" : " §4§l") + amount;
+    const count = options?.quantity !== false && (row.count > 1 || row.key.startsWith("job:break:")) ? ` §cx${row.count}` : "";
+    const label =
+        options?.names === false
+            ? ({ job: "Job reward", shop: "Shop transaction", auction: "Auction transaction" }[row.group] ?? row.description)
+            : row.description;
+    return phase + color + label.replace(/~/g, "～") + count + (credit ? " §2§l" : " §4§l") + amount;
 }
 
 function padRow(line) {
@@ -102,9 +120,24 @@ export function updateHud(state, now, send, compact = false) {
         return;
     }
     expire(state, now);
-    const balance = compact ? formatCentsCompact(state.observed) : formatCents(state.observed);
-    const lines = [`~LM3:${state.route}§l` + balance.padStart(16), ...state.rows.map((row) => notificationLine(row, now))];
-    const title = lines.map((line, i) => (i > 0 && i < lines.length - 1 ? padRow(line) : line)).join("\n");
+    let balance = formatDisplayMoney(state.observed, state.options, compact);
+    // The wallet label strips ASCII padding spaces and reserves 16 bytes for the amount.
+    // Use a nonbreaking space inside grouped numbers if it fits the packet.
+    balance = balance.replace(/ /g, "\u00a0");
+    let bytes = balance.length + (balance.match(/\u00a0/g)?.length ?? 0);
+    if (bytes > 16) {
+        balance = formatDisplayMoney(state.observed, { ...state.options, group: "None" }, compact);
+        bytes = balance.length;
+    }
+    const color = { Pink: "§d", Purple: "§5", Gold: "§6", Green: "§a" }[state.options?.color] ?? "§f";
+    // Both styles occupy six UTF-8 bytes, keeping receipt offsets fixed for every color.
+    const style = state.options?.boldBalance === false ? "§r" + color : color + "§l";
+    const header = state.wallet === false ? "_".repeat(22) : style + " ".repeat(16 - bytes) + balance;
+    const lines = [`~LM3:${state.route}` + header, ...state.rows.map((row) => notificationLine(row, now, state.options))];
+    const title =
+        state.wallet === false && !state.rows.length
+            ? "~LM3:R"
+            : lines.map((line, i) => (i > 0 && i < lines.length - 1 ? padRow(line) : line)).join("\n");
     if (title !== state.lastTitle || now >= state.refreshAt) {
         send(title);
         state.lastTitle = title;

@@ -1,3 +1,6 @@
+import { sendChat } from "./modules/chat.js";
+import { configuredInterval, onWorldReady } from "./modules/settings/timing.js";
+import { serverOptions } from "./modules/settings/server.js";
 import { system, world } from "@minecraft/server";
 import "./modules/ui/8crafterUiAuto.js";
 
@@ -100,8 +103,9 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     system.runTimeout(
         () => {
             try {
-                player.sendMessage(
-                    "§d<Lily's Money - v3.4.4>§2 scripts have launched!§r\n§bLily's money Support Discord: §9https://discord.gg/mVJmmAuQeX\n§rremember to use /moneyhelp for commands and /moneysettings for settings.",
+                sendChat(
+                    player,
+                    "§2Scripts v3.4.4 have launched!§r\n§bLily's money Support Discord: §9https://discord.gg/mVJmmAuQeX\n§rremember to use /moneyhelp for commands and /moneysettings for settings.",
                 );
             } catch {}
         },
@@ -118,82 +122,73 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         configTicks("NAME_SAVE_JOIN_DELAY_TICKS", 20),
     );
 
-    system.runTimeout(
-        () => {
+    system.runTimeout(() => {
+        try {
+            addZeroToJoiningPlayer(player);
+            giveStartMoneyIfNeeded(player);
+
+            // Cache the name before the join record or a checkpoint can refer to this identity.
             try {
-                addZeroToJoiningPlayer(player);
-                giveStartMoneyIfNeeded(player);
-
-                // Cache the name before the join record or a checkpoint can refer to this identity.
-                try {
-                    rememberPlayerName(player);
-                } catch {}
-
-                // Record the balance after starting money has been applied. The logger checks whether recording is enabled.
-                logPlayerJoin(player);
+                rememberPlayerName(player);
             } catch {}
-        },
-        configTicks("JOIN_INIT_DELAY_TICKS", 20),
-    );
+
+            // Record the balance after starting money has been applied. The logger checks whether recording is enabled.
+            logPlayerJoin(player);
+        } catch {}
+    }, serverOptions().join);
 });
 
-system.runTimeout(
-    () => {
+onWorldReady(() =>
+    system.runTimeout(() => {
         ensureMoneyObjectives();
         initMoneyForAllOnlinePlayers();
         for (const player of world.getAllPlayers()) rememberPlayerName(player);
         initializeMoneyLogging();
         clearLegacyMoneyDisplaySlots();
-    },
-    configTicks("BOOT_INIT_DELAY_TICKS", 20),
+    }, serverOptions().boot),
 );
 
-system.runInterval(() => {
+configuredInterval("normalize", () => {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
     if (!dollarsObj || !centsObj) return;
 
     for (const p of world.getAllPlayers()) {
         normalizePlayerIfNeeded(dollarsObj, centsObj, p);
     }
-}, CONFIG.NORMALIZE_INTERVAL_TICKS);
+});
 
 let scoreboardFallbackSuccesses = 0;
 
-const scoreboardFallbackRun = system.runInterval(
-    () => {
-        const maxSuccesses = configCount("SCOREBOARD_ZERO_FALLBACK_MAX_SUCCESSES", 3);
+const stopFallback = configuredInterval("retry", () => {
+    const maxSuccesses = configCount("SCOREBOARD_ZERO_FALLBACK_MAX_SUCCESSES", 3);
 
-        if (maxSuccesses <= 0) {
-            try {
-                system.clearRun(scoreboardFallbackRun);
-            } catch {}
-            return;
-        }
-
-        const players = world.getAllPlayers();
-        if (!players.length) return;
-
+    if (maxSuccesses <= 0) {
         try {
-            const p = players[0];
-
-            p.dimension.runCommand(`scoreboard players add @a ${CONFIG.MONEY_DOLLAR_OBJECTIVE} 0`);
-            p.dimension.runCommand(`scoreboard players add @a ${CONFIG.MONEY_CENT_OBJECTIVE} 0`);
-
-            scoreboardFallbackSuccesses++;
-
-            if (scoreboardFallbackSuccesses >= maxSuccesses) {
-                try {
-                    system.clearRun(scoreboardFallbackRun);
-                } catch {}
-            }
+            stopFallback();
         } catch {}
-    },
-    configTicks("SCOREBOARD_ZERO_FALLBACK_INTERVAL_TICKS", 200),
-);
+        return;
+    }
 
-system.runInterval(() => {
-    tickMoneyDisplay();
-}, CONFIG.MONEY_DISPLAY_UPDATE_TICKS);
+    const players = world.getAllPlayers();
+    if (!players.length) return;
+
+    try {
+        const p = players[0];
+
+        p.dimension.runCommand(`scoreboard players add @a ${CONFIG.MONEY_DOLLAR_OBJECTIVE} 0`);
+        p.dimension.runCommand(`scoreboard players add @a ${CONFIG.MONEY_CENT_OBJECTIVE} 0`);
+
+        scoreboardFallbackSuccesses++;
+
+        if (scoreboardFallbackSuccesses >= maxSuccesses) {
+            try {
+                stopFallback();
+            } catch {}
+        }
+    } catch {}
+});
+
+configuredInterval("refresh", tickMoneyDisplay);
 
 world.beforeEvents.playerLeave?.subscribe(({ player }) => rememberPlayerName(player));
 

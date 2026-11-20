@@ -1,3 +1,4 @@
+import { chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, Player, CustomCommandStatus, system, world } from "@minecraft/server";
 import { getCommandSource } from "../modules/commandSource.js";
 import { openAhEntry } from "../modules/auction/ui.js";
@@ -24,7 +25,7 @@ export function registerAhCommand(customCommandRegistry) {
             if (!(src instanceof Player)) {
                 return {
                     status: CustomCommandStatus.Failure,
-                    message: "Only players can use the auction house.",
+                    message: chatText("Only players can use the auction house."),
                 };
             }
 

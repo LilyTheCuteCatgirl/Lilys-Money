@@ -1,6 +1,7 @@
+import { serverOptions } from "../settings/server.js";
 import { system, world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
-import { getHudPosition, HUD_POSITIONS, hasCompactMoney, hasMoneyHud } from "../players/preferences.js";
+import { getDisplayOptions, getHudPosition, HUD_POSITIONS, hasCompactMoney, hasMoneyHud } from "../players/preferences.js";
 import { enqueueCard, observeBalance, newHudSession, updateHud } from "./session.js";
 
 const sessions = new Map();
@@ -19,7 +20,7 @@ function pulse() {
     for (const session of sessions.values()) {
         try {
             if (tick >= session.nextPoll || session.state.observed === undefined) {
-                session.nextPoll = tick + 20;
+                session.nextPoll = tick + serverOptions().poll;
                 observeBalance(session.state, readBalance(session.player), tick);
             }
             if (tick < session.state.nextFrame && tick < session.state.refreshAt && session.compact === session.state.compact) continue;
@@ -49,9 +50,11 @@ function forget(id) {
 
 export function syncMoneyHud(player) {
     const active = sessions.has(player.id);
-    if (hasMoneyHud(player)) {
+    const wallet = hasMoneyHud(player);
+    const options = getDisplayOptions(player);
+    if (wallet || options.notifications) {
         if (!active) {
-            sessions.set(player.id, { player, state: newHudSession(), nextPoll: system.currentTick + 20 });
+            sessions.set(player.id, { player, state: newHudSession(), nextPoll: system.currentTick + serverOptions().poll });
             try {
                 observeBalance(sessions.get(player.id).state, readBalance(player), system.currentTick);
             } catch {
@@ -60,6 +63,25 @@ export function syncMoneyHud(player) {
             if (interval === undefined) interval = system.runInterval(pulse, 1);
         }
         const session = sessions.get(player.id);
+        if (session.state.wallet !== wallet || JSON.stringify(session.state.options) !== JSON.stringify(options)) {
+            const old = session.state.options;
+            if (
+                old &&
+                ["notifications", "job", "shop", "auction", "payment", "admin", "other", "spending"].some(
+                    (key) => old[key] !== options[key],
+                )
+            ) {
+                // Account for external scoreboard changes under the filters that were active when they occurred.
+                observeBalance(session.state, readBalance(player), system.currentTick);
+                const visible = (row) =>
+                    options.notifications && options[row.group] !== false && (row.cents > 0 || options.spending) && !!row.group;
+                session.state.rows = session.state.rows.filter(visible);
+                session.state.waiting = session.state.waiting.filter(visible);
+            }
+            session.state.wallet = wallet;
+            session.state.options = options;
+            session.state.nextFrame = 0;
+        }
         session.compact = hasCompactMoney(player);
         const route = "BCDE"[HUD_POSITIONS.indexOf(getHudPosition(player))];
         if (session.state.route !== route) {

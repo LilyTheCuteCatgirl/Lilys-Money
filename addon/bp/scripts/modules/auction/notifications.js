@@ -1,3 +1,4 @@
+import { sendChat } from "../chat.js";
 import { notifyHudReceipt } from "../hud/manager.js";
 import { CONFIG } from "../../config.js";
 import { world, system, Player } from "@minecraft/server";
@@ -98,7 +99,7 @@ export function deliverAhSoldMessagesForIdentity(identityId) {
     }
 
     for (const sale of mine) notifyHudReceipt(seller, sale.price, `Auction: sold ${sale.itemName}`);
-    playMoneySound(seller);
+    playMoneySound(seller, "auction");
     return true;
 }
 
@@ -113,6 +114,6 @@ function deliverAhSoldMessagesForPlayer(player) {
 
 export function msg(player, text) {
     try {
-        player.sendMessage("§r<§dLily's Money§r> §r" + text);
+        sendChat(player, text);
     } catch {}
 }
