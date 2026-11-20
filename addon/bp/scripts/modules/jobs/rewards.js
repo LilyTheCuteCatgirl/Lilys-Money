@@ -1,9 +1,9 @@
+import { observePreRewardBalance } from "../hud/manager.js";
+import { niceIdName } from "../items/identifiers.js";
 import { CONFIG } from "../../config.js";
 import { system, world, Player } from "@minecraft/server";
-import { DP_MAX, getCompiledJob, shortId, protectsBreak } from "./storage.js";
+import { DP_MAX, getCompiledJob, protectsBreak } from "./storage.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../economy/balance.js";
-import { setActionbarToast } from "../economy/display.js";
-import { formatCents } from "../economy/formatting.js";
 import { playMoneySound } from "../players/preferences.js";
 import { logMoneyEvent } from "../logging/moneylogging.js";
 
@@ -11,7 +11,6 @@ const JOB_PLACED_BLOCK_CLEANUP_INTERVAL_TICKS = Math.max(1, Math.floor(Number(CO
 const JOB_TAG_PREFIX = "job:";
 const JOB_STATS_DP_KEY = `lilymoney:job_stats_v1`;
 const JOB_STATS_FLUSH_INTERVAL_TICKS = Math.max(1, Math.floor(Number(CONFIG.JOB_STATS_FLUSH_INTERVAL_TICKS ?? 400)));
-const MAX_TOAST_TICKS = 40;
 const PLACED_TTL_TICKS = 20 * 60 * 30;
 const _placedBlocks = new Map();
 
@@ -212,13 +211,14 @@ system.runInterval(() => {
     _statsDirty = false;
 }, JOB_STATS_FLUSH_INTERVAL_TICKS);
 
-function payout(player, centsEarned, toastText) {
+function payout(player, centsEarned, kind, id) {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
     const bal = getBalanceCents(dollarsObj, centsObj, player);
+    observePreRewardBalance(player, bal);
     const next = bal + centsEarned;
-    setBalanceFromTotalCents(dollarsObj, centsObj, player, next);
+    const verb = { break: "Mined", place: "Placed", kill: "Killed", pickup: "Picked up" }[kind];
+    setBalanceFromTotalCents(dollarsObj, centsObj, player, next, `${verb} ${niceIdName(id)}`.toLowerCase(), `job:${kind}:${id}`);
 
-    setActionbarToast(player, `${toastText} §2+${formatCents(centsEarned)}`, MAX_TOAST_TICKS);
     playMoneySound(player);
 
     return next;
@@ -244,11 +244,7 @@ function handleReward(player, kind, id, count = 1) {
     const total = per * count;
     if (!Number.isSafeInteger(total)) return;
 
-    const label = kind === "break" ? "§8Broke" : kind === "place" ? "§8Placed" : kind === "kill" ? "§8Killed" : "§8Got";
-
-    const toast = `${label} §f${shortId(id)}${count > 1 ? ` §8x§f${count}` : ""}`;
-
-    const balanceAfter = payout(player, total, toast);
+    const balanceAfter = payout(player, total, kind, id);
     markEarn(player, jobId, kind, id, total, count);
 
     logMoneyEvent("JOB_REWARD", {

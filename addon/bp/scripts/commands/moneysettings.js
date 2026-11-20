@@ -1,21 +1,18 @@
+import { syncMoneyHud } from "../modules/hud/manager.js";
 import { CommandPermissionLevel, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 
-import { CONFIG } from "../config.js";
 import { getCommandSource, isAdmin } from "../modules/commandSource.js";
-import {
-    getMoneyDisplaySettings,
-    setMoneyDisplaySettings,
-    applyMoneyDisplaySettings,
-    recreateMoneyDisplayObjectiveIfNeeded,
-} from "../modules/economy/display.js";
 import { getStartMoneyCents, setStartMoneyCents } from "../modules/economy/balance.js";
 import { formatCents, parseFloatToCents } from "../modules/economy/formatting.js";
 import {
     getMoneyPersonalDefaults,
     setMoneyPersonalDefaults,
-    hasMoneyActionbar,
-    setMoneyActionbar,
+    getHudPosition,
+    setHudPosition,
+    HUD_POSITIONS,
+    hasMoneyHud,
+    setMoneyHud,
     hasMoneySound,
     setMoneySound,
     hasCompactMoney,
@@ -55,26 +52,26 @@ async function openRoot(player) {
         return openPersonalSettings(player);
     }
 
-    const g = getMoneyDisplaySettings();
     const d = getMoneyPersonalDefaults();
     const start = getStartMoneyCents();
     const transactionLogging = getMoneyLoggingEnabled();
 
-    const a = hasMoneyActionbar(player);
     const s = hasMoneySound(player);
     const c = hasCompactMoney(player);
 
     const body =
         `§d§lAdmin settings:\n` +
-        `§r§8Sidebar: ${g.sidebar ? "§2§lON" : "§c§lOFF"}  §r§l|  ` +
-        `§r§8Belowname: ${g.belowname ? "§2§lON" : "§c§lOFF"}\n` +
-        `§r§8Default actionbar: ${d.actionbar ? "§2§lON" : "§c§lOFF"}  §r§l|  ` +
+        `§r§8Default money HUD: ${d.hud ? "§2§lON" : "§c§lOFF"}\n` +
+        `§r§8Default HUD position: ${d.position}
+` +
         `§r§8Default money sound: ${d.sound ? "§2§lON" : "§c§lOFF"}\n` +
         `§r§8Default compact numbers: ${d.compact ? "§2§lON" : "§c§lOFF"}  §r§l|  ` +
         `§r§8Money history logging: ${transactionLogging ? "§2§lON" : "§c§lOFF"}\n` +
         `§r§8Start money: §e${formatCents(start)}\n\n` +
         `§r§eYour personal settings:\n` +
-        `§r§8Actionbar: ${a ? "§2§lON" : "§c§lOFF"}\n` +
+        `§r§8Money HUD: ${hasMoneyHud(player) ? "§2§lON" : "§c§lOFF"}\n` +
+        `§r§8HUD position: ${getHudPosition(player)}
+` +
         `§r§8Money sound: ${s ? "§2§lON" : "§c§lOFF"}\n` +
         `§r§8Compact numbers: ${c ? "§2§lON" : "§c§lOFF"}`;
 
@@ -93,21 +90,16 @@ async function openRoot(player) {
 }
 
 async function openAdminSettings(player) {
-    const curGlobal = getMoneyDisplaySettings();
     const curDefaults = getMoneyPersonalDefaults();
     const startCents = getStartMoneyCents();
     const transactionLogging = getMoneyLoggingEnabled();
 
     const form = new ModalFormData()
         .title("§d§lAdmin settings§r")
-        .toggle("Sidebar display (dollars only) ", { defaultValue: !!curGlobal.sidebar })
-        .toggle("Below name display (dollars only) ", { defaultValue: !!curGlobal.belowname })
-        .toggle("Default actionbar display for players ", { defaultValue: !!curDefaults.actionbar })
+        .toggle("Default Money HUD", { defaultValue: curDefaults.hud })
+        .dropdown("Default HUD position", HUD_POSITIONS, { defaultValueIndex: HUD_POSITIONS.indexOf(curDefaults.position) })
         .toggle("Default money sound for players ", { defaultValue: !!curDefaults.sound })
         .toggle("Default compact numbers for players ", { defaultValue: !!curDefaults.compact })
-        .textField("Actionbar text  ({money}, {dollars}, {cents}, or scoreboard objectives like {secs})", "ex: §d§lMoney§r: §e{money}", {
-            defaultValue: String(curGlobal.actionbarTemplate ?? CONFIG.ACTIONBAR_TEMPLATE),
-        })
         .textField(`Money given on first join  (currently ${formatCents(startCents)})`, "ex: 0   or   10.50", {
             defaultValue: String(startCents / 100),
         })
@@ -116,14 +108,11 @@ async function openAdminSettings(player) {
     const res = await form.show(player);
     if (res.canceled) return openRoot(player);
 
-    const sidebar = !!res.formValues?.[0];
-    const belowname = !!res.formValues?.[1];
-    const defaultActionbar = !!res.formValues?.[2];
-    const defaultSound = !!res.formValues?.[3];
-    const defaultCompact = !!res.formValues?.[4];
-    const actionbarTemplateRaw = String(res.formValues?.[5] ?? "").trim();
-    const startRaw = String(res.formValues?.[6] ?? "").trim();
-    const transactionLoggingEnabled = !!res.formValues?.[7];
+    const defaultHud = !!res.formValues?.[0];
+    const defaultSound = !!res.formValues?.[2];
+    const defaultCompact = !!res.formValues?.[3];
+    const startRaw = String(res.formValues?.[4] ?? "").trim();
+    const transactionLoggingEnabled = !!res.formValues?.[5];
 
     const loggingChanged = transactionLoggingEnabled !== transactionLogging;
     if (loggingChanged) {
@@ -134,21 +123,9 @@ async function openAdminSettings(player) {
         }
     }
 
-    const nextGlobal = setMoneyDisplaySettings({
-        sidebar,
-        belowname,
-        actionbar: true,
-        actionbarTemplate: actionbarTemplateRaw.length ? actionbarTemplateRaw : CONFIG.ACTIONBAR_TEMPLATE,
-    });
-
-    applyMoneyDisplaySettings(nextGlobal);
-
-    if (nextGlobal.sidebar || nextGlobal.belowname) {
-        recreateMoneyDisplayObjectiveIfNeeded();
-    }
-
     setMoneyPersonalDefaults({
-        actionbar: defaultActionbar,
+        hud: defaultHud,
+        position: HUD_POSITIONS[res.formValues[1]],
         sound: defaultSound,
         compact: defaultCompact,
     });
@@ -172,22 +149,28 @@ async function openAdminSettings(player) {
 }
 
 async function openPersonalSettings(player) {
-    const curActionbar = hasMoneyActionbar(player);
+    const curHud = hasMoneyHud(player);
+    const curPosition = getHudPosition(player);
     const curSound = hasMoneySound(player);
     const curCompact = hasCompactMoney(player);
 
     const form = new ModalFormData()
         .title("§e§lPersonal settings§r")
-        .toggle("§rActionbar money display", { defaultValue: curActionbar })
+        .toggle("§rMoney HUD", { defaultValue: curHud })
+        .dropdown("HUD position", HUD_POSITIONS, { defaultValueIndex: HUD_POSITIONS.indexOf(curPosition) })
         .toggle("§rMoney sound (blinggg)", { defaultValue: curSound })
         .toggle("§rCompact numbers (1.2k / 3.4m)", { defaultValue: curCompact });
 
     const res = await form.show(player);
     if (res.canceled) return;
 
-    setMoneyActionbar(player, !!res.formValues?.[0]);
-    setMoneySound(player, !!res.formValues?.[1]);
-    setCompactMoney(player, !!res.formValues?.[2]);
+    const [hud, positionIndex, sound, compact] = res.formValues;
+    const position = HUD_POSITIONS[positionIndex];
+    if (hud !== curHud) setMoneyHud(player, hud);
+    if (position !== curPosition) setHudPosition(player, position);
+    if (sound !== curSound) setMoneySound(player, sound);
+    if (compact !== curCompact) setCompactMoney(player, compact);
+    syncMoneyHud(player);
 
     player.sendMessage("§r<§dLily's Money§r> §r" + "§aPersonal settings updated.");
 }

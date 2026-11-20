@@ -1,0 +1,841 @@
+{
+  "namespace": "lily_money_hud",
+  "balance_memory": {
+    "type": "panel",
+    "size": [
+      0,
+      0
+    ],
+    "property_bag": {
+      "#saved": ""
+    },
+    "bindings": [
+      {
+        "binding_name": "#hud_title_text_string"
+      },
+      {
+        "binding_name": "#hud_title_text_string",
+        "binding_name_override": "#saved",
+        "binding_condition": "visibility_changed"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "((not (#hud_title_text_string = #saved)) and ((not ((#hud_title_text_string - $route) = #hud_title_text_string)) or (#hud_title_text_string = '~LM3:R')))",
+        "target_property_name": "#visible"
+      }
+    ]
+  },
+  "wallet": {
+    "type": "panel",
+    "size": [
+      "100%",
+      96
+    ],
+    "controls": [
+      {
+        "balance_memory@lily_money_hud.balance_memory": {}
+      },
+      {
+        "amount": {
+          "type": "label",
+          "text": "#text",
+          "localize": false,
+          "shadow": true,
+          "font_scale_factor": 0.96,
+          "text_alignment": "$align",
+          "anchor_from": "$corner",
+          "anchor_to": "$corner",
+          "offset": [
+            0,
+            0
+          ],
+          "bindings": [
+            {
+              "binding_name": "#hud_title_text_string"
+            },
+            {
+              "binding_type": "view",
+              "source_property_name": "(((((('%.25s' * #hud_title_text_string) - $route) - '        ') - '    ') - '  ') - ' ')",
+              "target_property_name": "#text"
+            },
+            {
+              "binding_type": "view",
+              "source_property_name": "(not ((#hud_title_text_string - $route) = #hud_title_text_string))",
+              "target_property_name": "#visible"
+            }
+          ],
+          "controls": [
+            {
+              "backdrop@lily_money_hud.text_backdrop": {
+                "$label_name": "amount"
+              }
+            }
+          ],
+          "color": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "last_amount": {
+          "type": "label",
+          "text": "#text",
+          "localize": false,
+          "shadow": true,
+          "font_scale_factor": 0.96,
+          "text_alignment": "$align",
+          "anchor_from": "$corner",
+          "anchor_to": "$corner",
+          "offset": [
+            0,
+            0
+          ],
+          "bindings": [
+            {
+              "binding_name": "#hud_title_text_string"
+            },
+            {
+              "binding_type": "view",
+              "source_property_name": "((((((('%.25s' * #saved) - $route) - '~LM3:R') - '        ') - '    ') - '  ') - ' ')",
+              "target_property_name": "#text",
+              "source_control_name": "balance_memory",
+              "resolve_sibling_scope": true
+            },
+            {
+              "binding_type": "view",
+              "source_property_name": "((not (not ((#hud_title_text_string - $route) = #hud_title_text_string))) and (not (#hud_title_text_string = '~LM3:R')))",
+              "target_property_name": "#visible"
+            }
+          ],
+          "controls": [
+            {
+              "backdrop@lily_money_hud.text_backdrop": {
+                "$label_name": "last_amount"
+              }
+            }
+          ],
+          "color": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "notice_text_1@lily_money_hud.notice_text": {
+          "$position": "$row1",
+          "$start": "%.26s",
+          "$end": "%.282s",
+          "$slot_name": "notice_text_1",
+          "$after_phase": "%.27s"
+        }
+      },
+      {
+        "notice_text_2@lily_money_hud.notice_text": {
+          "$position": "$row2",
+          "$start": "%.283s",
+          "$end": "%.539s",
+          "$slot_name": "notice_text_2",
+          "$after_phase": "%.284s"
+        }
+      },
+      {
+        "notice_text_3@lily_money_hud.notice_text": {
+          "$position": "$row3",
+          "$start": "%.540s",
+          "$end": "%.796s",
+          "$slot_name": "notice_text_3",
+          "$after_phase": "%.541s"
+        }
+      },
+      {
+        "notice_text_4@lily_money_hud.notice_text": {
+          "$position": "$row4",
+          "$start": "%.797s",
+          "$end": "%.1053s",
+          "$slot_name": "notice_text_4",
+          "$after_phase": "%.798s"
+        }
+      },
+      {
+        "notice_text_5@lily_money_hud.notice_text": {
+          "$position": "$row5",
+          "$start": "%.1054s",
+          "$end": "%.1310s",
+          "$slot_name": "notice_text_5",
+          "$after_phase": "%.1055s"
+        }
+      },
+      {
+        "notice_text_6@lily_money_hud.notice_text": {
+          "$position": "$row6",
+          "$start": "%.1311s",
+          "$end": "%.1567s",
+          "$slot_name": "notice_text_6",
+          "$after_phase": "%.1312s"
+        }
+      },
+      {
+        "last_notice_text_1@lily_money_hud.last_notice_text": {
+          "$position": "$row1",
+          "$start": "%.26s",
+          "$end": "%.282s",
+          "$slot_name": "last_notice_text_1",
+          "$after_phase": "%.27s"
+        }
+      },
+      {
+        "last_notice_text_2@lily_money_hud.last_notice_text": {
+          "$position": "$row2",
+          "$start": "%.283s",
+          "$end": "%.539s",
+          "$slot_name": "last_notice_text_2",
+          "$after_phase": "%.284s"
+        }
+      },
+      {
+        "last_notice_text_3@lily_money_hud.last_notice_text": {
+          "$position": "$row3",
+          "$start": "%.540s",
+          "$end": "%.796s",
+          "$slot_name": "last_notice_text_3",
+          "$after_phase": "%.541s"
+        }
+      },
+      {
+        "last_notice_text_4@lily_money_hud.last_notice_text": {
+          "$position": "$row4",
+          "$start": "%.797s",
+          "$end": "%.1053s",
+          "$slot_name": "last_notice_text_4",
+          "$after_phase": "%.798s"
+        }
+      },
+      {
+        "last_notice_text_5@lily_money_hud.last_notice_text": {
+          "$position": "$row5",
+          "$start": "%.1054s",
+          "$end": "%.1310s",
+          "$slot_name": "last_notice_text_5",
+          "$after_phase": "%.1055s"
+        }
+      },
+      {
+        "last_notice_text_6@lily_money_hud.last_notice_text": {
+          "$position": "$row6",
+          "$start": "%.1311s",
+          "$end": "%.1567s",
+          "$slot_name": "last_notice_text_6",
+          "$after_phase": "%.1312s"
+        }
+      }
+    ],
+    "anchor_from": "$corner",
+    "anchor_to": "$corner",
+    "offset": "$inset",
+    "bindings": [
+      {
+        "binding_name": "#hud_title_text_string"
+      },
+      {
+        "binding_type": "view",
+        "source_control_name": "route_memory",
+        "resolve_sibling_scope": true,
+        "source_property_name": "('%.6s' * #saved)",
+        "target_property_name": "#last_route"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "((('%.6s' * #hud_title_text_string) = $route) or (((#hud_title_text_string - '~LM3:') = #hud_title_text_string) and (#last_route = $route)))",
+        "target_property_name": "#visible"
+      }
+    ],
+    "property_bag": {
+      "#last_route": ""
+    }
+  },
+  "overlay": {
+    "type": "panel",
+    "size": [
+      "100%",
+      "100%"
+    ],
+    "layer": 6,
+    "controls": [
+      {
+        "route_memory@lily_money_hud.balance_memory": {
+          "$route": "~LM3:"
+        }
+      },
+      {
+        "top_right@lily_money_hud.wallet": {
+          "$route": "~LM3:B",
+          "$corner": "top_right",
+          "$align": "right",
+          "$inset": [
+            -3,
+            3
+          ],
+          "$row1": [
+            0,
+            16
+          ],
+          "$row2": [
+            0,
+            29
+          ],
+          "$row3": [
+            0,
+            42
+          ],
+          "$row4": [
+            0,
+            55
+          ],
+          "$row5": [
+            0,
+            68
+          ],
+          "$row6": [
+            0,
+            81
+          ],
+          "$shift_A": [
+            0,
+            5
+          ],
+          "$shift_B": [
+            0,
+            4
+          ],
+          "$shift_C": [
+            0,
+            2
+          ],
+          "$shift_D": [
+            0,
+            1
+          ],
+          "$shift_S": [
+            0,
+            0
+          ],
+          "$shift_E": [
+            5,
+            0
+          ],
+          "$shift_F": [
+            14,
+            0
+          ],
+          "$shift_G": [
+            29,
+            0
+          ],
+          "$shift_H": [
+            50,
+            0
+          ],
+          "$shift_I": [
+            79,
+            0
+          ],
+          "$shift_J": [
+            119,
+            0
+          ],
+          "$shift_K": [
+            180,
+            0
+          ],
+          "$shift_L": [
+            "100% + 8px",
+            0
+          ]
+        }
+      },
+      {
+        "top_left@lily_money_hud.wallet": {
+          "$route": "~LM3:C",
+          "$corner": "top_left",
+          "$align": "left",
+          "$inset": [
+            3,
+            3
+          ],
+          "$row1": [
+            0,
+            16
+          ],
+          "$row2": [
+            0,
+            29
+          ],
+          "$row3": [
+            0,
+            42
+          ],
+          "$row4": [
+            0,
+            55
+          ],
+          "$row5": [
+            0,
+            68
+          ],
+          "$row6": [
+            0,
+            81
+          ],
+          "$shift_A": [
+            0,
+            5
+          ],
+          "$shift_B": [
+            0,
+            4
+          ],
+          "$shift_C": [
+            0,
+            2
+          ],
+          "$shift_D": [
+            0,
+            1
+          ],
+          "$shift_S": [
+            0,
+            0
+          ],
+          "$shift_E": [
+            -5,
+            0
+          ],
+          "$shift_F": [
+            -14,
+            0
+          ],
+          "$shift_G": [
+            -29,
+            0
+          ],
+          "$shift_H": [
+            -50,
+            0
+          ],
+          "$shift_I": [
+            -79,
+            0
+          ],
+          "$shift_J": [
+            -119,
+            0
+          ],
+          "$shift_K": [
+            -180,
+            0
+          ],
+          "$shift_L": [
+            "-100% - 8px",
+            0
+          ]
+        }
+      },
+      {
+        "bottom_right@lily_money_hud.wallet": {
+          "$route": "~LM3:D",
+          "$corner": "bottom_right",
+          "$align": "right",
+          "$inset": [
+            -3,
+            -3
+          ],
+          "$row1": [
+            0,
+            -16
+          ],
+          "$row2": [
+            0,
+            -29
+          ],
+          "$row3": [
+            0,
+            -42
+          ],
+          "$row4": [
+            0,
+            -55
+          ],
+          "$row5": [
+            0,
+            -68
+          ],
+          "$row6": [
+            0,
+            -81
+          ],
+          "$shift_A": [
+            0,
+            -5
+          ],
+          "$shift_B": [
+            0,
+            -4
+          ],
+          "$shift_C": [
+            0,
+            -2
+          ],
+          "$shift_D": [
+            0,
+            -1
+          ],
+          "$shift_S": [
+            0,
+            0
+          ],
+          "$shift_E": [
+            5,
+            0
+          ],
+          "$shift_F": [
+            14,
+            0
+          ],
+          "$shift_G": [
+            29,
+            0
+          ],
+          "$shift_H": [
+            50,
+            0
+          ],
+          "$shift_I": [
+            79,
+            0
+          ],
+          "$shift_J": [
+            119,
+            0
+          ],
+          "$shift_K": [
+            180,
+            0
+          ],
+          "$shift_L": [
+            "100% + 8px",
+            0
+          ]
+        }
+      },
+      {
+        "bottom_left@lily_money_hud.wallet": {
+          "$route": "~LM3:E",
+          "$corner": "bottom_left",
+          "$align": "left",
+          "$inset": [
+            3,
+            -3
+          ],
+          "$row1": [
+            0,
+            -16
+          ],
+          "$row2": [
+            0,
+            -29
+          ],
+          "$row3": [
+            0,
+            -42
+          ],
+          "$row4": [
+            0,
+            -55
+          ],
+          "$row5": [
+            0,
+            -68
+          ],
+          "$row6": [
+            0,
+            -81
+          ],
+          "$shift_A": [
+            0,
+            -5
+          ],
+          "$shift_B": [
+            0,
+            -4
+          ],
+          "$shift_C": [
+            0,
+            -2
+          ],
+          "$shift_D": [
+            0,
+            -1
+          ],
+          "$shift_S": [
+            0,
+            0
+          ],
+          "$shift_E": [
+            -5,
+            0
+          ],
+          "$shift_F": [
+            -14,
+            0
+          ],
+          "$shift_G": [
+            -29,
+            0
+          ],
+          "$shift_H": [
+            -50,
+            0
+          ],
+          "$shift_I": [
+            -79,
+            0
+          ],
+          "$shift_J": [
+            -119,
+            0
+          ],
+          "$shift_K": [
+            -180,
+            0
+          ],
+          "$shift_L": [
+            "-100% - 8px",
+            0
+          ]
+        }
+      }
+    ]
+  },
+  "text_backdrop": {
+    "type": "image",
+    "texture": "textures/lily_hud/backdrop",
+    "size": [
+      "100% + 4px",
+      "100% + 2px"
+    ],
+    "anchor_from": "center",
+    "anchor_to": "center",
+    "layer": -1,
+    "bindings": [
+      {
+        "binding_type": "view",
+        "source_control_name": "$label_name",
+        "source_property_name": "(not (#text = ''))",
+        "target_property_name": "#visible"
+      }
+    ]
+  },
+  "card_frame": {
+    "type": "label",
+    "text": "#text",
+    "localize": false,
+    "shadow": true,
+    "font_scale_factor": 0.96,
+    "text_alignment": "$align",
+    "anchor_from": "$corner",
+    "anchor_to": "$corner",
+    "alpha": "$opacity",
+    "propagate_alpha": true,
+    "offset": "$shift",
+    "bindings": [
+      {
+        "binding_type": "view",
+        "source_control_name": "$slot_name",
+        "source_property_name": "#card_text",
+        "target_property_name": "#text"
+      },
+      {
+        "binding_type": "view",
+        "source_control_name": "$slot_name",
+        "source_property_name": "(#card_phase = $phase)",
+        "target_property_name": "#visible"
+      }
+    ],
+    "controls": [
+      {
+        "backdrop@lily_money_hud.text_backdrop": {}
+      }
+    ]
+  },
+  "card_slot": {
+    "type": "panel",
+    "size": [
+      "100%",
+      13
+    ],
+    "anchor_from": "$corner",
+    "anchor_to": "$corner",
+    "offset": "$position",
+    "property_bag": {
+      "#card_text": "",
+      "#card_phase": ""
+    },
+    "controls": [
+      {
+        "frame_A@lily_money_hud.card_frame": {
+          "$label_name": "frame_A",
+          "$phase": "A",
+          "$opacity": 0.08,
+          "$shift": "$shift_A"
+        }
+      },
+      {
+        "frame_B@lily_money_hud.card_frame": {
+          "$label_name": "frame_B",
+          "$phase": "B",
+          "$opacity": 0.28,
+          "$shift": "$shift_B"
+        }
+      },
+      {
+        "frame_C@lily_money_hud.card_frame": {
+          "$label_name": "frame_C",
+          "$phase": "C",
+          "$opacity": 0.59,
+          "$shift": "$shift_C"
+        }
+      },
+      {
+        "frame_D@lily_money_hud.card_frame": {
+          "$label_name": "frame_D",
+          "$phase": "D",
+          "$opacity": 0.84,
+          "$shift": "$shift_D"
+        }
+      },
+      {
+        "frame_S@lily_money_hud.card_frame": {
+          "$label_name": "frame_S",
+          "$phase": "S",
+          "$opacity": 1,
+          "$shift": "$shift_S"
+        }
+      },
+      {
+        "frame_E@lily_money_hud.card_frame": {
+          "$label_name": "frame_E",
+          "$phase": "E",
+          "$opacity": 1,
+          "$shift": "$shift_E"
+        }
+      },
+      {
+        "frame_F@lily_money_hud.card_frame": {
+          "$label_name": "frame_F",
+          "$phase": "F",
+          "$opacity": 1,
+          "$shift": "$shift_F"
+        }
+      },
+      {
+        "frame_G@lily_money_hud.card_frame": {
+          "$label_name": "frame_G",
+          "$phase": "G",
+          "$opacity": 1,
+          "$shift": "$shift_G"
+        }
+      },
+      {
+        "frame_H@lily_money_hud.card_frame": {
+          "$label_name": "frame_H",
+          "$phase": "H",
+          "$opacity": 1,
+          "$shift": "$shift_H"
+        }
+      },
+      {
+        "frame_I@lily_money_hud.card_frame": {
+          "$label_name": "frame_I",
+          "$phase": "I",
+          "$opacity": 1,
+          "$shift": "$shift_I"
+        }
+      },
+      {
+        "frame_J@lily_money_hud.card_frame": {
+          "$label_name": "frame_J",
+          "$phase": "J",
+          "$opacity": 1,
+          "$shift": "$shift_J"
+        }
+      },
+      {
+        "frame_K@lily_money_hud.card_frame": {
+          "$label_name": "frame_K",
+          "$phase": "K",
+          "$opacity": 1,
+          "$shift": "$shift_K"
+        }
+      },
+      {
+        "frame_L@lily_money_hud.card_frame": {
+          "$label_name": "frame_L",
+          "$phase": "L",
+          "$opacity": 1,
+          "$shift": "$shift_L"
+        }
+      }
+    ]
+  },
+  "notice_text@lily_money_hud.card_slot": {
+    "bindings": [
+      {
+        "binding_name": "#hud_title_text_string"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "(((((((((($end * #hud_title_text_string) - ($after_phase * #hud_title_text_string)) - '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~') - '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~') - '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~') - '~~~~~~~~~~~~~~~~') - '~~~~~~~~') - '~~~~') - '~~') - '~')",
+        "target_property_name": "#card_text"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "(($after_phase * #hud_title_text_string) - ($start * #hud_title_text_string))",
+        "target_property_name": "#card_phase"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "(not ((#hud_title_text_string - $route) = #hud_title_text_string))",
+        "target_property_name": "#visible"
+      }
+    ]
+  },
+  "last_notice_text@lily_money_hud.card_slot": {
+    "bindings": [
+      {
+        "binding_name": "#hud_title_text_string"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "(((((((((($end * #saved) - ($after_phase * #saved)) - '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~') - '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~') - '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~') - '~~~~~~~~~~~~~~~~') - '~~~~~~~~') - '~~~~') - '~~') - '~')",
+        "target_property_name": "#card_text",
+        "source_control_name": "balance_memory",
+        "resolve_sibling_scope": true
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "(($after_phase * #saved) - ($start * #saved))",
+        "target_property_name": "#card_phase",
+        "source_control_name": "balance_memory",
+        "resolve_sibling_scope": true
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "((not (not ((#hud_title_text_string - $route) = #hud_title_text_string))) and (not (#hud_title_text_string = '~LM3:R')))",
+        "target_property_name": "#visible"
+      }
+    ]
+  }
+}

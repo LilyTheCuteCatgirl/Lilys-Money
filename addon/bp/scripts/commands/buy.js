@@ -155,7 +155,7 @@ export function registerBuyCommand(customCommandRegistry) {
                     return;
                 }
 
-                setBalanceFromTotalCents(dollarsObj, centsObj, target, bal - totalCost);
+                setBalanceFromTotalCents(dollarsObj, centsObj, target, bal - totalCost, null);
 
                 logMoneyEvent("BUY_COMMAND", {
                     actor: origin,

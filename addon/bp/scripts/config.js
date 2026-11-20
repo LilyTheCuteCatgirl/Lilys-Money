@@ -9,10 +9,6 @@ export const CONFIG = Object.freeze({
     MONEY_CENT_DISPLAY: "§d§lMoney Cents",
     MONEY_DISPLAY_OBJECTIVE_NAME: "§d§lMoney",
 
-    // Default actionbar text when the world has no saved template. {money} follows the player's number format.
-    // Use {money_full} for the full amount or a scoreboard objective in braces to show its score.
-    ACTIONBAR_TEMPLATE: "§d§lMoney§r: §e{money}",
-
     // Number of entries on each /balancetop page.
     TOP_N_PER_PAGE: 10,
 
@@ -49,8 +45,8 @@ export const CONFIG = Object.freeze({
     // Ticks between balance normalization passes for online players. Longer intervals reduce how often the scoreboards are checked.
     NORMALIZE_INTERVAL_TICKS: 100,
 
-    // Ticks between money display updates. Raising this value reduces update frequency and makes balance changes appear later.
-    MONEY_DISPLAY_UPDATE_TICKS: 20,
+    // Ticks between checks for changes to HUD preferences.
+    MONEY_DISPLAY_UPDATE_TICKS: 40,
 
     // Reserved setting. The current display code does not use this delay.
     MONEY_DISPLAY_RECREATE_DELAY_TICKS: 40,
@@ -108,11 +104,8 @@ export const CONFIG = Object.freeze({
     // Marks players who have received their starting allowance. Renaming it can pay existing players again.
     FIRST_JOIN_TAG: "lilymoney:got_start_money",
 
-    // Reserved tag. The current preference checks use the on and off tags below.
-    PLAYER_ACTIONBAR_TAG: "lilymoney:actionbar_money",
-
-    PLAYER_ACTIONBAR_OFF_TAG: "lilymoney:actionbar_off",
-    PLAYER_ACTIONBAR_ON_TAG: "lilymoney:actionbar_on",
+    PLAYER_HUD_OFF_TAG: "lilymoney:hud_off",
+    PLAYER_HUD_ON_TAG: "lilymoney:hud_on",
 
     PLAYER_SOUND_OFF_TAG: "lilymoney:sound_off",
     PLAYER_SOUND_ON_TAG: "lilymoney:sound_on",

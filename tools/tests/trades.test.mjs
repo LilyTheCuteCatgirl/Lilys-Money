@@ -190,3 +190,73 @@ test("an old potion listing survives purchase, cancellation and expired collecti
     assert.equal(f.buyer.inventory.getItem(0), undefined);
     assert.equal(f.balance(f.buyer), 1000);
 });
+
+async function captureHud(f) {
+    const { syncMoneyHud } = await f.load("scripts/modules/hud/manager.js");
+    const titles = new Map();
+    for (const player of [f.buyer, f.seller]) {
+        player.onScreenDisplay = {
+            setTitle(text) {
+                titles.set(player, text);
+            },
+        };
+        syncMoneyHud(player);
+    }
+    return (player) => {
+        for (const timer of f.intervals.values()) if (timer.ticks === 1) timer.callback();
+        const [wallet, ...rows] = titles.get(player).split("\n");
+        assert.equal(wallet.slice("~LM3:B§l".length).trim(), "$" + (f.balance(player) / 100).toFixed(2));
+        return rows;
+    };
+}
+
+test("shop receipts update the wallet without adding cards", async (t) => {
+    const f = await shopFixture(t),
+        read = await captureHud(f);
+    f.forms(2);
+    await f.flowBuy(f.buyer, offer);
+    assert.deepEqual(read(f.buyer), []);
+    assert.match(f.buyer.messages.join(" "), /Bought .*\$2\.50/);
+    f.forms(1);
+    await f.flowSell(f.buyer, offer);
+    assert.deepEqual(read(f.buyer), []);
+    assert.match(f.buyer.messages.join(" "), /Sold .*\$0\.35/);
+});
+
+test("auction receipts update both wallets without adding cards, including after a rollback", async (t) => {
+    const f = await auctionFixture(t),
+        read = await captureHud(f);
+    f.online.push(f.buyer, f.seller);
+    f.list();
+    const write = f.world.setDynamicProperty;
+    f.world.setDynamicProperty = () => {
+        throw Error("storage unavailable");
+    };
+    f.buyAuction(f.buyer, "1");
+    assert.deepEqual(read(f.buyer), []);
+    assert.deepEqual(read(f.seller), []);
+    f.world.setDynamicProperty = write;
+    f.buyAuction(f.buyer, "1");
+    assert.deepEqual(read(f.buyer), []);
+    assert.deepEqual(read(f.seller), []);
+    assert.match(f.buyer.messages.join(" "), /Bought .*\$1\.25/);
+    assert.match(f.seller.messages.join(" "), /bought your .*\$1\.25/);
+});
+
+test("pay receipts update both wallets without adding cards", async (t) => {
+    const f = await commerceFixture(t),
+        read = await captureHud(f);
+    const { registerPayCommand } = await f.load("scripts/commands/pay.js");
+    let pay;
+    registerPayCommand({
+        registerCommand(_def, callback) {
+            pay = callback;
+        },
+    });
+    pay({ sourceEntity: f.buyer }, [f.seller], 1.25);
+    f.scheduled.pop()();
+    assert.deepEqual(read(f.buyer), []);
+    assert.deepEqual(read(f.seller), []);
+    assert.match(f.buyer.messages.join(" "), /Paid .*Seller/);
+    assert.match(f.seller.messages.join(" "), /received .*Buyer/);
+});

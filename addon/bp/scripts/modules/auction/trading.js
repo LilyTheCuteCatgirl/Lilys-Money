@@ -1,3 +1,4 @@
+import { sampleHudBalance, sampleAuctionSeller } from "../hud/manager.js";
 import { world } from "@minecraft/server";
 import {
     getPlayerIdentityId,
@@ -79,6 +80,8 @@ export function buyAuction(player, auctionId) {
         msg(player, "§cPurchase failed. Check the Content Log for details.");
         return "details";
     }
+    sampleHudBalance(player, null);
+    sampleAuctionSeller(a.sellerIdentityId);
     logMoneyEvent("AH_BUY", {
         buyer: player,
         sellerIdentityId: a.sellerIdentityId,

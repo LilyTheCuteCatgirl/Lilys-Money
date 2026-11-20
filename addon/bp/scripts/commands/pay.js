@@ -75,8 +75,8 @@ export function registerPayCommand(customCommandRegistry) {
 
                 const targetBal = getBalanceCents(dollarsObj, centsObj, target);
 
-                setBalanceFromTotalCents(dollarsObj, centsObj, source, senderBal - amount);
-                setBalanceFromTotalCents(dollarsObj, centsObj, target, targetBal + amount);
+                setBalanceFromTotalCents(dollarsObj, centsObj, source, senderBal - amount, null);
+                setBalanceFromTotalCents(dollarsObj, centsObj, target, targetBal + amount, null);
 
                 logMoneyEvent("PAY", {
                     actor: source,

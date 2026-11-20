@@ -11,12 +11,7 @@ import {
     getBalanceCents,
     setBalanceFromTotalCents,
 } from "./modules/economy/balance.js";
-import {
-    applyMoneyDisplaySettings,
-    tickMoneyDisplay,
-    recreateMoneyDisplayObjectiveIfNeeded,
-    removePlayerFromMoneyDisplay,
-} from "./modules/economy/display.js";
+import { clearLegacyMoneyDisplaySlots, tickMoneyDisplay } from "./modules/economy/display.js";
 
 import { rememberPlayerName, flushSavedPlayerNames } from "./modules/players/nameDatabase.js";
 import { registerBalanceCommands } from "./commands/balance.js";
@@ -91,7 +86,7 @@ function giveStartMoneyIfNeeded(player) {
         addZeroToJoiningPlayer(player);
 
         const current = getBalanceCents(dollarsObj, centsObj, player);
-        setBalanceFromTotalCents(dollarsObj, centsObj, player, current + start);
+        setBalanceFromTotalCents(dollarsObj, centsObj, player, current + start, "Starting money");
 
         player.addTag(CONFIG.FIRST_JOIN_TAG);
     } catch {}
@@ -147,10 +142,8 @@ system.runTimeout(
         ensureMoneyObjectives();
         initMoneyForAllOnlinePlayers();
         for (const player of world.getAllPlayers()) rememberPlayerName(player);
-        applyMoneyDisplaySettings();
-        recreateMoneyDisplayObjectiveIfNeeded();
-
         initializeMoneyLogging();
+        clearLegacyMoneyDisplaySlots();
     },
     configTicks("BOOT_INIT_DELAY_TICKS", 20),
 );
@@ -204,10 +197,9 @@ system.runInterval(() => {
 
 world.beforeEvents.playerLeave?.subscribe(({ player }) => rememberPlayerName(player));
 
-world.afterEvents.playerLeave.subscribe((ev) => {
+world.afterEvents.playerLeave.subscribe(() => {
     try {
         flushSavedPlayerNames();
-        removePlayerFromMoneyDisplay(ev.playerId);
     } catch {}
 });
 

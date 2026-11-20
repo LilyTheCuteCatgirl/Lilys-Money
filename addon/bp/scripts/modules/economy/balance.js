@@ -1,3 +1,4 @@
+import { sampleHudBalance } from "../hud/manager.js";
 import { world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
 import { clampTotalCents } from "./formatting.js";
@@ -45,7 +46,7 @@ export function getBalanceCents(dollarsObj, centsObj, player) {
     return d * 100 + c;
 }
 
-export function setBalanceFromTotalCents(dollarsObj, centsObj, player, totalCents) {
+export function setBalanceFromTotalCents(dollarsObj, centsObj, player, totalCents, description, key) {
     totalCents = clampTotalCents(totalCents);
 
     const id = player?.scoreboardIdentity;
@@ -60,6 +61,7 @@ export function setBalanceFromTotalCents(dollarsObj, centsObj, player, totalCent
     try {
         centsObj.setScore(id, cents);
     } catch {}
+    sampleHudBalance(player, description, key);
 }
 
 export function normalizePlayerIfNeeded(dollarsObj, centsObj, player) {

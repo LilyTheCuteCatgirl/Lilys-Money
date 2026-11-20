@@ -136,7 +136,7 @@ export function registerSellCommand(customCommandRegistry) {
 
                 const bal = getBalanceCents(dollarsObj, centsObj, target);
                 const next = bal + totalPay;
-                setBalanceFromTotalCents(dollarsObj, centsObj, target, next);
+                setBalanceFromTotalCents(dollarsObj, centsObj, target, next, null);
 
                 logMoneyEvent("SELL_COMMAND", {
                     actor: origin,

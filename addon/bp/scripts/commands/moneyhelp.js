@@ -127,12 +127,10 @@ const COMMAND_PAGES = [
             "§e§l/moneysettings§r\n\n" +
             "§fOpens the money settings UI.\n\n" +
             "§e§lPlayer settings§r\n" +
-            "§8- §fActionbar money display\n" +
+            "§8- §fMoney HUD and HUD position\n" +
             "§8- §fMoney sounds\n" +
             "§8- §fCompact numbers\n\n" +
             "§c§lAdmin settings§r\n" +
-            "§8- §fSidebar display\n" +
-            "§8- §fBelow-name display\n" +
             "§8- §fDefault player settings\n" +
             "§8- §fStarting money\n\n" +
             "§8Players can edit their own personal display settings.\n" +
