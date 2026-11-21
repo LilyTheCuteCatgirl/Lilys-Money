@@ -18,6 +18,13 @@ adding options
 - changing the money scoreboard (with a pulldown menu with all the scoreboards)
 
 
+// TODO: fix HUD when buying in shop for exemple 30 breas only saying bougth bread whiout telling the number
+
+
+// TODO: add a button in /ah my items to sell
+
+// TODO: add toggle for /ah confirmation in the /moneysettings
+
 
 
 
