@@ -100,5 +100,3 @@ adding options
 
 
 
-
-Candidature stage en Bac Pro Photonique | Raphael Pitiot
