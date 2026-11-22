@@ -25,7 +25,8 @@ adding options
 
 // TODO: add toggle for /ah confirmation in the /moneysettings
 
-
+// TODO: make enchants visible in the /ah page whiout opening it
+    especialy for enchanted books
 
 
 # later planned ideas:
@@ -54,3 +55,50 @@ adding options
 
 - a kind of stock market?
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 8crafter app todo/bug list
+
+// TODO: overview when in all players looks weird
+
+// TODO: rankings on all players overview page doesnt go up to 10 players but only 8
+
+// TODO: add a compress tab in the job reward part so if you search for exemple iron ore instead of seing lily +4 iron lily +3 iron.. youll only see lily +7 iron
+    turning on that option will hide the dates ofc since it will be on a spreaded area 
+
+// FIXME: make ALL the graphs in the app use a better way of formatting (idk how to explain it well but ill try my best:)
+    current graphs can have slopes wich isnt actualy posible in minecraft since all transactions are a 1 time off thing 
+    exemple if you spend 30 then spend 30 again a little later you should see spent 30 fully vertical then it should be flat and then vertical again for the other spent 30 and then flat again and not be a downwards angled slope 
+
+
+// TODO: make addon information tab up to date
+
+// TODO: make the rescan button actualy rescan the current world
+
+
+
+
+
+Candidature stage en Bac Pro Photonique | Raphael Pitiot
