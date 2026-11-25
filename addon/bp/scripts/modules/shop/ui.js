@@ -204,31 +204,42 @@ async function openShopRoot(player) {
     return openCategoryMenu(player, catIndex);
 }
 
-async function openCategoryMenu(player, catIndex) {
+async function openCategoryMenu(player, catIndex, page = 0) {
     const shop = loadShop();
     const cat = shop.categories[catIndex];
-    if (!cat) return;
+    if (!cat) return openShopRoot(player);
+
+    const pageSize = 20;
+    const pages = Math.max(1, Math.ceil(cat.items.length / pageSize));
+    page = Math.max(0, Math.min(page, pages - 1));
+    const start = page * pageSize;
+    const shown = cat.items.slice(start, start + pageSize);
+    const heading = pages > 1 ? `Page ${page + 1}/${pages} | ` : "";
 
     const form = new ActionFormData()
         .use8CrafterLayout("long")
         .title(`Shop - ${cat.name}`)
-        .body(`Balance: §e${getMoneyStr(player)}\n§8Choose an item:`);
+        .body(`Balance: §e${getMoneyStr(player)}\n§8${heading}Choose an item:`);
 
-    for (const it of cat.items) {
+    for (const it of shown) {
         form.button(`§8§l${shopItemTitle(it)}\n§r${formatItemLinePlayer(it)}`, getShopItemIcon(it));
     }
 
+    const previous = page > 0;
+    const next = page + 1 < pages;
+    if (previous) form.button("§8§lPrevious Page", "textures/ui/arrow_left");
+    if (next) form.button("§8§lNext Page", "textures/ui/arrow_right");
     form.button("§8§lBack", "textures/ui/arrow_left");
 
     const res = await form.show(player);
     if (res.canceled) return;
-
-    if (res.selection === cat.items.length) return openShopRoot(player);
-
-    const it = cat.items[res.selection];
-    if (!it) return;
-
-    return openItemMenu(player, catIndex, res.selection, () => openCategoryMenu(player, catIndex));
+    const pick = res.selection;
+    if (Number.isInteger(pick) && pick >= 0 && pick < shown.length) {
+        return openItemMenu(player, catIndex, start + pick, () => openCategoryMenu(player, catIndex, page));
+    }
+    if (previous && pick === shown.length) return openCategoryMenu(player, catIndex, page - 1);
+    if (next && pick === shown.length + Number(previous)) return openCategoryMenu(player, catIndex, page + 1);
+    return openShopRoot(player);
 }
 
 async function openItemMenu(player, catIndex, itemIndex, back) {

@@ -1,6 +1,6 @@
-export const ROOT = "Lily's Money — Settings";
+export const ROOT = "Lily's Money - Settings";
 export const pages = {
-    "Lily's Money — Settings": {
+    "Lily's Money - Settings": {
         body: "Personal settings affect you. Server settings affect everyone in this world.",
         links: [
             ["Personal Settings", "textures/ui/settings_glyph_color_2x"],
@@ -60,7 +60,7 @@ export const pages = {
         ],
     },
     "Advanced Performance": {
-        body: "§c§lWARNING — ADVANCED SETTINGS\n\n§fThese options control Lily's Money's internal update intervals and startup delays.\n\n§cChanging values without understanding their effects can cause increased lag, delayed updates, or unexpected behavior.\n\n§eLeave these settings at their defaults unless you know what you are doing.",
+        body: "§c§lWARNING - ADVANCED SETTINGS\n\n§fThese options control Lily's Money's internal update intervals and startup delays.\n\n§cChanging values without understanding their effects can cause increased lag, delayed updates, or unexpected behavior.\n\n§eLeave these settings at their defaults unless you know what you are doing.",
         links: [["Continue to Advanced Settings", "textures/ui/confirm"]],
     },
     "Continue to Advanced Settings": {

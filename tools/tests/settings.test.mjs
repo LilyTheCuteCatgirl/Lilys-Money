@@ -3,7 +3,7 @@ import test from "node:test";
 import { pages, ROOT } from "../../addon/bp/scripts/modules/settings/pages.js";
 
 const expected = {
-    "Lily's Money — Settings": ["Personal Settings", "Server Settings"],
+    "Lily's Money - Settings": ["Personal Settings", "Server Settings"],
     "Personal Settings": ["HUD & Appearance", "Notifications", "Sounds", "Number Formatting", "Shop Purchases", "Auction House"],
     "HUD & Appearance": ["Basic HUD Settings", "HUD Theme & Effects"],
     Notifications: ["General Notifications", "Notification Categories", "Notification Details"],
@@ -21,8 +21,9 @@ const expected = {
     "Advanced Performance": ["Continue to Advanced Settings"],
     "Continue to Advanced Settings": ["HUD & Economy Timing", "Jobs & Auction Timing", "Startup & Initialization Timing"],
 };
+
 test("settings navigation preserves button order and supplies explicit texture paths", () => {
-    assert.equal(ROOT, "Lily's Money — Settings");
+    assert.equal(ROOT, "Lily's Money - Settings");
     for (const [name, labels] of Object.entries(expected)) {
         assert.deepEqual(
             pages[name].links.map(([label]) => label),
@@ -34,6 +35,7 @@ test("settings navigation preserves button order and supplies explicit texture p
 
 import { newHudSession, observeBalance, enqueueCard, updateHud } from "../../addon/bp/scripts/modules/hud/session.js";
 import { packFixture } from "./packFixture.mjs";
+
 test("filtered cards advance the observed wallet and never enter the queue", () => {
     const s = newHudSession();
     s.options = { job: false, duration: 1, combine: false, animate: false, names: false, quantity: false };
@@ -54,6 +56,7 @@ test("filtered cards advance the observed wallet and never enter the queue", () 
     assert.equal(s.rows.length, 1);
     assert.equal(s.waiting.length, 0);
 });
+
 test("personal display overrides follow player properties through reload and remain independent of defaults", async (t) => {
     const f = await packFixture(t);
     const pref = await f.load("scripts/modules/players/preferences.js");
@@ -67,6 +70,7 @@ test("personal display overrides follow player properties through reload and rem
 });
 
 import { formatDisplayMoney } from "../../addon/bp/scripts/modules/economy/formatting.js";
+
 test("localized amounts keep the 28-byte wallet header for every route", () => {
     const options = { group: "Space", decimal: "Comma", color: "Pink", cents: "Always" };
     assert.equal(formatDisplayMoney(-123456, options), "-$1 234,56");

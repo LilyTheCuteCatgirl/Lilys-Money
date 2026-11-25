@@ -78,11 +78,10 @@ function auctionButtonText(a, includeSeller = true) {
     return `§8§l${auctionTitle(a)} x${a.amount}${enchantmentSummary(a)}\n` + `§r§d${formatCents(a.price)}${seller}`;
 }
 
-function buildAuctionDetailsBody(player, a) {
-    const t = normalizeTemplate(a?.template);
+function buildAuctionDetailsBody(a, t, title, own) {
     const lines = [];
 
-    lines.push(`§8Item: §f${auctionTitle(a)} §lx${a.amount}`);
+    lines.push(`§8Item: §f${title} §lx${a.amount}`);
     lines.push(`§8Price: §e${formatCents(a.price)} §l(total)`);
     lines.push(`§8Seller: §f${a.sellerName}`);
     lines.push(`§8Status: ${a.status === "expired" ? "§cExpired" : "§2§lActive"}`);
@@ -90,7 +89,7 @@ function buildAuctionDetailsBody(player, a) {
     if (a.status === "active") lines.push(`§8Expires in: §f${daysLeftText(a.expiresAt)}`);
     if (a.status === "expired") lines.push(`§8Claim/delete in: §f${daysLeftText(a.collectUntil)}`);
 
-    if (sameSeller(player, a)) lines.push("", "§2§lThis is your auction.");
+    if (own) lines.push("", "§2§lThis is your auction.");
 
     if (!t) return lines.join("\n");
 
@@ -211,7 +210,9 @@ async function openAuctionDetails(player, auctionId, back = { type: "browse", qu
 
     const own = sameSeller(player, a);
 
-    const form = new ActionFormData().title(ahTitle(auctionTitle(a))).body(buildAuctionDetailsBody(player, a));
+    const template = normalizeTemplate(a.template);
+    const title = template ? template.nameTag || niceIdName(template.typeId) : "Unknown Item";
+    const form = new ActionFormData().title(ahTitle(title)).body(buildAuctionDetailsBody(a, template, title, own));
 
     const actions = [];
 

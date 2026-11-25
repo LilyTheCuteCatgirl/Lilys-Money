@@ -98,13 +98,16 @@ export function editorFor(name, p) {
     if (personal[name])
         return [
             personal[name],
-            () => ({
-                ...getDisplayOptions(p),
-                hud: hasMoneyHud(p),
-                position: getHudPosition(p),
-                sound: hasMoneySound(p),
-                mode: getDisplayOptions(p).smart ? "Smart" : hasCompactMoney(p) ? "Compact" : "Full",
-            }),
+            () => {
+                const options = getDisplayOptions(p);
+                return {
+                    ...options,
+                    hud: hasMoneyHud(p),
+                    position: getHudPosition(p),
+                    sound: hasMoneySound(p),
+                    mode: options.smart ? "Smart" : hasCompactMoney(p) ? "Compact" : "Full",
+                };
+            },
             (changes) => {
                 const next = { ...getDisplayOptions(p), ...changes };
                 if (next.group === next.decimal) return sendChat(p, "Choose different thousands and decimal separators.");

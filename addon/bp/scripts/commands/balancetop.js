@@ -2,7 +2,8 @@ import { chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
 import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getScoreSafe } from "../modules/economy/balance.js";
-import { formatMoneyForPlayer } from "../modules/players/preferences.js";
+import { getDisplayOptions, hasCompactMoney } from "../modules/players/preferences.js";
+import { formatDisplayMoney } from "../modules/economy/formatting.js";
 import { getCommandSource, reply } from "../modules/commandSource.js";
 
 import { getSavedPlayerNameFromParticipant } from "../modules/players/nameDatabase.js";
@@ -21,10 +22,13 @@ function buildTopMoneyMessage(rows, page, perPage, viewer) {
         return text;
     }
 
+    const options = getDisplayOptions(viewer);
+    const compact = hasCompactMoney(viewer);
+
     for (let i = 0; i < slice.length; i++) {
         const rank = start + i + 1;
         const r = slice[i];
-        text += `§e#${rank} §f${r.name} §8- §a${formatMoneyForPlayer(viewer, r.total)}\n`;
+        text += `§e#${rank} §f${r.name} §8- §a${formatDisplayMoney(r.total, options, compact)}\n`;
     }
 
     text += `§8Tip: /topmoney ${safePage + 1} for next page`;

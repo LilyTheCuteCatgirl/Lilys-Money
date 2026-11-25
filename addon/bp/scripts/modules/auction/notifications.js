@@ -73,8 +73,7 @@ export function queueAhSoldMessage(ah, auction, buyerName) {
     enforceSoldMessageCapForSeller(ah, auction.sellerIdentityId);
 }
 
-export function deliverAhSoldMessagesForIdentity(identityId) {
-    const seller = getOnlinePlayerByIdentityId(identityId);
+export function deliverAhSoldMessagesForIdentity(identityId, seller = getOnlinePlayerByIdentityId(identityId)) {
     if (!(seller instanceof Player)) return false;
 
     const ah = loadAh();
@@ -109,7 +108,7 @@ function deliverAhSoldMessagesForPlayer(player) {
     const id = getPlayerIdentityId(player);
     if (!id) return false;
 
-    return deliverAhSoldMessagesForIdentity(id);
+    return deliverAhSoldMessagesForIdentity(id, player);
 }
 
 export function msg(player, text) {
