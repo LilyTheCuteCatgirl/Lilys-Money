@@ -20,6 +20,7 @@ adding options
 
 // TODO: fix HUD when buying in shop for exemple 30 breas only saying bougth bread whiout telling the number
 
+// TODO: when /shop <> if you use the back button after clicking an item it ddoesnt bring you to the same menu as before but it brings you to that items category
 
 // TODO: add a button in /ah my items to sell
 
