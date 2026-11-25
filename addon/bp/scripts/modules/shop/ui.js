@@ -117,13 +117,11 @@ function buildShopItemDetailsBody(player, it) {
 
 export async function openShopEntry(player, itemQuery) {
     if (!serverOptions().shop) return sendChat(player, "The shop is disabled.");
-    const shop = loadShop();
-
-    if (!itemQuery || !String(itemQuery).trim()) {
-        return openShopRoot(player);
-    }
 
     const query = String(itemQuery ?? "").trim();
+    if (!query) return openShopRoot(player);
+
+    const shop = loadShop();
     const matches = findItemInShop(shop, query);
 
     if (matches.length === 0) {
