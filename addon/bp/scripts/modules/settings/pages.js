@@ -8,13 +8,14 @@ export const pages = {
         ],
     },
     "Personal Settings": {
-        body: "Customize your HUD, sounds, numbers and shop purchases.",
+        body: "Customize your HUD, sounds, numbers and trade confirmations.",
         links: [
             ["HUD & Appearance", "textures/ui/settings_glyph_color_2x"],
             ["Notifications", "textures/items/emerald"],
             ["Sounds", "textures/items/diamond"],
             ["Number Formatting", "textures/items/gold_ingot"],
             ["Shop Purchases", "textures/blocks/chest_front"],
+            ["Auction House", "textures/items/emerald"],
         ],
     },
     "HUD & Appearance": {

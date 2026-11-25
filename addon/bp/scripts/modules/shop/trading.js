@@ -186,8 +186,7 @@ export async function flowBuy(player, it) {
     const totalCost = it.buy * qty;
     if (!Number.isSafeInteger(totalCost)) return shopMessage(player, "§cTotal cost is too large.");
 
-    const confirmed =
-        !serverOptions().confirm || !getDisplayOptions(player).confirmBuy || (await confirmShopBuy(player, it, qty, totalCost, bal));
+    const confirmed = !getDisplayOptions(player).confirmBuy || (await confirmShopBuy(player, it, qty, totalCost, bal));
     if (!confirmed) return;
     if (!serverOptions().shop || !serverOptions().buy || qty > serverOptions().maxItems)
         return shopMessage(player, "Shop settings changed. Reopen the shop.");
@@ -213,7 +212,7 @@ export async function flowBuy(player, it) {
         addTemplateItems(invNow, template, qty, onRollback);
     });
     if (!ok) return shopMessage(player, "§cPurchase failed. Check the Content Log for details.");
-    recordHudChange(player, next + totalCost, next, `Shop: bought ${shopItemTitle(it)}`);
+    recordHudChange(player, next + totalCost, next, `Shop: bought ${shopItemTitle(it)}`, undefined, qty);
     logMoneyEvent("SHOP_BUY", {
         player,
         itemId: it.id,
@@ -254,7 +253,7 @@ export async function flowSell(player, it) {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
     const bal = getBalanceCents(dollarsObj, centsObj, player);
 
-    const confirmed = !serverOptions().confirm || (await confirmShopSell(player, it, qty, totalPay, bal));
+    const confirmed = !getDisplayOptions(player).confirmSell || (await confirmShopSell(player, it, qty, totalPay, bal));
     if (!confirmed) return;
     if (!serverOptions().shop || !serverOptions().sell || qty > serverOptions().maxItems)
         return shopMessage(player, "Shop settings changed. Reopen the shop.");
@@ -275,7 +274,7 @@ export async function flowSell(player, it) {
         next = changeTradeBalance(dollarsObj, centsObj, player.scoreboardIdentity, totalPay, onRollback);
     });
     if (!ok) return shopMessage(player, "§cSale failed. Check the Content Log for details.");
-    recordHudChange(player, next - totalPay, next, `Shop: sold ${shopItemTitle(it)}`);
+    recordHudChange(player, next - totalPay, next, `Shop: sold ${shopItemTitle(it)}`, undefined, qty);
     logMoneyEvent("SHOP_SELL", {
         player,
         itemId: it.id,

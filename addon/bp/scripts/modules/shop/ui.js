@@ -133,7 +133,7 @@ export async function openShopEntry(player, itemQuery) {
 
     if (matches.length === 1) {
         const m = matches[0];
-        return openItemMenu(player, m.ci, m.ii);
+        return openItemMenu(player, m.ci, m.ii, () => openShopRoot(player));
     }
 
     const shownMatches = matches.slice(0, serverOptions().search);
@@ -162,7 +162,7 @@ export async function openShopEntry(player, itemQuery) {
     const pick = shownMatches[res.selection];
     if (!pick) return openShopRoot(player);
 
-    return openItemMenu(player, pick.ci, pick.ii);
+    return openItemMenu(player, pick.ci, pick.ii, () => openShopEntry(player, query));
 }
 
 async function openShopRoot(player) {
@@ -230,10 +230,10 @@ async function openCategoryMenu(player, catIndex) {
     const it = cat.items[res.selection];
     if (!it) return;
 
-    return openItemMenu(player, catIndex, res.selection);
+    return openItemMenu(player, catIndex, res.selection, () => openCategoryMenu(player, catIndex));
 }
 
-async function openItemMenu(player, catIndex, itemIndex) {
+async function openItemMenu(player, catIndex, itemIndex, back) {
     const shop = loadShop();
     const cat = shop.categories[catIndex];
     const it = cat?.items?.[itemIndex];
@@ -262,11 +262,11 @@ async function openItemMenu(player, catIndex, itemIndex) {
 
     const chosen = actions[res.selection];
 
-    if (chosen === "back") return openCategoryMenu(player, catIndex);
+    if (chosen === "back") return back();
     if (chosen === "buy") await flowBuy(player, it);
     if (chosen === "sell") await flowSell(player, it);
 
-    return openItemMenu(player, catIndex, itemIndex);
+    return openItemMenu(player, catIndex, itemIndex, back);
 }
 
 async function openEditor(player) {

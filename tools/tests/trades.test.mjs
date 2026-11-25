@@ -218,12 +218,12 @@ test("shop receipts report actual buys and sells and survive the next poll", asy
         read = await captureHud(f);
     f.forms(2);
     await f.flowBuy(f.buyer, offer);
-    assert.deepEqual(read(f.buyer), ["Shop: bought Stone -2.50"]);
+    assert.deepEqual(read(f.buyer), ["Shop: bought 2 Stone -2.50"]);
     assert.match(f.buyer.messages.join(" "), /Bought .*\$2\.50/);
     f.forms(1);
     await f.flowSell(f.buyer, offer);
     f.system.currentTick += 20;
-    assert.deepEqual(read(f.buyer), ["Shop: bought Stone -2.50", "Shop: sold Stone +0.35"]);
+    assert.deepEqual(read(f.buyer), ["Shop: bought 2 Stone -2.50", "Shop: sold 1 Stone +0.35"]);
     assert.match(f.buyer.messages.join(" "), /Sold .*\$0\.35/);
 });
 
@@ -465,7 +465,7 @@ test("shop policy changed during a purchase takes effect before settlement", asy
     await f.flowBuy(f.buyer, offer);
     assert.equal(f.balance(f.buyer), 1000);
     assert.equal(f.buyer.inventory.getItem(0), undefined);
-    saveServerOptions({ confirm: false });
+    (await f.load("scripts/modules/players/preferences.js")).setMoneyPersonalDefaults({ confirmBuy: false });
     f.forms(1, () => assert.fail("unexpected confirmation"));
     await f.flowBuy(f.buyer, offer);
     assert.equal(f.balance(f.buyer), 875);
@@ -492,4 +492,28 @@ test("skipping a purchase confirmation is personal and leaves sale confirmation 
     await f.flowSell(f.buyer, offer);
     assert.equal(asked, true);
     assert.equal(f.balance(f.buyer), 910);
+});
+
+test("a personal sale override skips only the sale prompt and records the full stack quantity", async (t) => {
+    const f = await shopFixture(t);
+    const pref = await f.load("scripts/modules/players/preferences.js");
+    f.buyer.getDynamicProperty = () => '{"confirmSell":false}';
+    assert.equal(pref.getDisplayOptions(f.buyer).confirmBuy, true);
+    const read = await captureHud(f);
+    f.buyer.inventory.setItem(0, new f.ItemStack("minecraft:stone", 64));
+    f.forms(64, () => assert.fail("unexpected sale confirmation"));
+    await f.flowSell(f.buyer, offer);
+    assert.deepEqual(read(f.buyer), ["Shop: sold 64 Stone +22.40"]);
+});
+
+test("combined Shop receipts sum traded units and signed costs across different stack sizes", async (t) => {
+    const f = await shopFixture(t);
+    f.dollars.setScore(f.buyer.scoreboardIdentity, 100);
+    const read = await captureHud(f);
+    f.forms(30);
+    await f.flowBuy(f.buyer, offer);
+    assert.deepEqual(read(f.buyer), ["Shop: bought 30 Stone -37.50"]);
+    f.forms(2);
+    await f.flowBuy(f.buyer, offer);
+    assert.deepEqual(read(f.buyer), ["Shop: bought 32 Stone -40.00"]);
 });

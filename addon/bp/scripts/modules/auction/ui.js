@@ -1,3 +1,4 @@
+import { getDisplayOptions } from "../players/preferences.js";
 import { serverOptions } from "../settings/server.js";
 import { CONFIG } from "../../config.js";
 import { parseFloatToCents, formatCents } from "../economy/formatting.js";
@@ -63,10 +64,18 @@ function getAuctionIcon(auctionOrTemplate) {
     return getItemIconFromAuction(auctionOrTemplate);
 }
 
+function enchantmentSummary(a) {
+    const enchants = a.template?.enchantments;
+    if (!enchants?.length) return "";
+    const first = enchants[0];
+    const remaining = enchants.length > 1 ? ` +${enchants.length - 1} more` : "";
+    return ` §r§5${niceIdName(first.id)} ${romanLevel(first.level)}${remaining}`;
+}
+
 function auctionButtonText(a, includeSeller = true) {
     const seller = includeSeller ? ` §8| §b${a.sellerName}` : "";
 
-    return `§8§l${auctionTitle(a)} x${a.amount}\n` + `§r§d${formatCents(a.price)}${seller}`;
+    return `§8§l${auctionTitle(a)} x${a.amount}${enchantmentSummary(a)}\n` + `§r§d${formatCents(a.price)}${seller}`;
 }
 
 function buildAuctionDetailsBody(player, a) {
@@ -249,19 +258,21 @@ async function openBuyAuctionConfirm(player, auctionId, back) {
         return openAuctionDetails(player, auctionId, back);
     }
 
-    const confirm = new ActionFormData()
-        .title(ahTitle("§2§lBuy Auction?"))
-        .body(
-            `§f§lItem: §e${auctionTitle(a)}\n` +
-                `§f§lAmount: §e${a.amount}\n` +
-                `§f§lSeller: §e${a.sellerName}\n` +
-                `§f§lTotal price: §e${formatCents(a.price)}`,
-        )
-        .button("§c§lCancel", "textures/ui/cancel")
-        .button("§2§lBuy", getAuctionIcon(a));
+    if (getDisplayOptions(player).confirmAuctionBuy) {
+        const confirm = new ActionFormData()
+            .title(ahTitle("§2§lBuy Auction?"))
+            .body(
+                `§f§lItem: §e${auctionTitle(a)}\n` +
+                    `§f§lAmount: §e${a.amount}\n` +
+                    `§f§lSeller: §e${a.sellerName}\n` +
+                    `§f§lTotal price: §e${formatCents(a.price)}`,
+            )
+            .button("§c§lCancel", "textures/ui/cancel")
+            .button("§2§lBuy", getAuctionIcon(a));
 
-    const res = await confirm.show(player);
-    if (res.canceled || res.selection === 0) return openAuctionDetails(player, auctionId, back);
+        const res = await confirm.show(player);
+        if (res.canceled || res.selection !== 1) return openAuctionDetails(player, auctionId, back);
+    }
 
     return afterTrade(player, buyAuction(player, auctionId), auctionId, back);
 }
@@ -292,12 +303,19 @@ async function openMyAhItems(player, page = 0) {
     for (const a of shown) {
         const status = a.status === "active" ? `§2Active §8${daysLeftText(a.expiresAt)}` : `§cExpired §8${daysLeftText(a.collectUntil)}`;
 
-        form.button(`§8§l${auctionTitle(a)} x${a.amount}\n§r${status} §8| §e${formatCents(a.price)}`, getAuctionIcon(a));
+        form.button(
+            `§8§l${auctionTitle(a)} x${a.amount}${enchantmentSummary(a)}\n§r${status} §8| §e${formatCents(a.price)}`,
+            getAuctionIcon(a),
+        );
 
         actions.push({
             type: "view",
             id: a.id,
         });
+    }
+    if (serverOptions().auctions) {
+        form.button("§2§lSell Item", "textures/ui/color_plus_green");
+        actions.push({ type: "sell" });
     }
     if (page > 0) {
         form.button("§8§lPrevious Page", "textures/ui/arrow_left");
@@ -316,6 +334,7 @@ async function openMyAhItems(player, page = 0) {
     if (res.canceled || actions[res.selection]?.type === "back") return serverOptions().auctions ? openAhBrowse(player, "", 0) : undefined;
     const action = actions[res.selection];
     if (!action) return;
+    if (action.type === "sell") return openAhInventoryPicker(player, { type: "my", page });
     if (action.type === "page") return openMyAhItems(player, action.page);
     if (action.type === "view") return openAuctionDetails(player, action.id, { type: "my", page });
 }
@@ -364,7 +383,7 @@ async function openAhSellEntry(player, priceRaw = "") {
     return openAhSellHeld(player, selected, held);
 }
 
-async function openAhInventoryPicker(player) {
+async function openAhInventoryPicker(player, back) {
     const inv = getInventoryContainer(player);
     if (!inv) return msg(player, "§cNo inventory container.");
 
@@ -382,24 +401,24 @@ async function openAhInventoryPicker(player) {
     form.button("§8§lBack", "textures/ui/arrow_left");
 
     const res = await form.show(player);
-    if (res.canceled || res.selection === slots.length) return openAhBrowse(player, "", 0);
+    if (res.canceled || res.selection === slots.length) return openBack(player, back);
 
     const slot = slots[res.selection];
     const stack = inv.getItem(slot);
     if (!stack) {
         msg(player, "§cThat slot is empty now.");
-        return openAhInventoryPicker(player);
+        return openAhInventoryPicker(player, back);
     }
 
-    return openAhSellHeld(player, slot, stack);
+    return openAhSellHeld(player, slot, stack, back);
 }
 
-async function openAhSellHeld(player, slotIndex, sourceStack) {
-    if (!sourceStack) return openAhInventoryPicker(player);
+async function openAhSellHeld(player, slotIndex, sourceStack, back) {
+    if (!sourceStack) return openAhInventoryPicker(player, back);
 
     if (isShulkerBoxId(sourceStack.typeId)) {
         msg(player, "§cAuction House does not support shulker boxes because Bedrock hides their contents from scripts.");
-        return openAhBrowse(player, "", 0);
+        return openBack(player, back);
     }
 
     if (isPotionItem(sourceStack?.typeId) || isShulkerBoxId(sourceStack?.typeId))
@@ -407,24 +426,24 @@ async function openAhSellHeld(player, slotIndex, sourceStack) {
     const template = stackToTemplate(sourceStack);
     if (!template) {
         msg(player, "§cCould not copy that item.");
-        return openAhBrowse(player, "", 0);
+        return openBack(player, back);
     }
 
     const form = new ModalFormData().title("Sell on AH").textField("Total price", "ex: 500", { defaultValue: "1.00" });
 
     const res = await form.show(player);
-    if (res.canceled) return openAhBrowse(player, "", 0);
+    if (res.canceled) return openBack(player, back);
 
     const parsed = parseUiMoneyToCents(res.formValues?.[0], false);
     if (!parsed.ok) {
         msg(player, `§c${parsed.error ?? "Invalid price."}`);
-        return openAhBrowse(player, "", 0);
+        return openBack(player, back);
     }
 
-    return openQuickSellConfirm(player, slotIndex, sourceStack, parsed.cents);
+    return openQuickSellConfirm(player, slotIndex, sourceStack, parsed.cents, back);
 }
 
-async function openQuickSellConfirm(player, slotIndex, sourceStack, priceCents) {
+async function openQuickSellConfirm(player, slotIndex, sourceStack, priceCents, back) {
     if (isPotionItem(sourceStack?.typeId) || isShulkerBoxId(sourceStack?.typeId))
         return msg(player, "§cPotions and shulker boxes cannot be safely copied for auction.");
     const template = stackToTemplate(sourceStack);
@@ -433,21 +452,23 @@ async function openQuickSellConfirm(player, slotIndex, sourceStack, priceCents) 
     const amount = Math.max(1, Math.floor(Number(sourceStack.amount ?? 1)));
     const itemName = template.nameTag || niceIdName(template.typeId);
 
-    const confirm = new ActionFormData()
-        .title(ahTitle("§2§lList Auction?"))
-        .body(
-            `§f§lItem: §e${itemName}\n` +
-                `§f§lAmount: §e${amount}\n` +
-                `§f§lTotal price: §e${formatCents(priceCents)}\n\n` +
-                `§c§lThis will remove the whole stack from your inventory.`,
-        )
-        .button("§8§lBack", "textures/ui/arrow_left")
-        .button("§2§lList Item", getStackIcon(sourceStack));
+    if (getDisplayOptions(player).confirmAuctionList) {
+        const confirm = new ActionFormData()
+            .title(ahTitle("§2§lList Auction?"))
+            .body(
+                `§f§lItem: §e${itemName}\n` +
+                    `§f§lAmount: §e${amount}\n` +
+                    `§f§lTotal price: §e${formatCents(priceCents)}\n\n` +
+                    `§c§lThis will remove the whole stack from your inventory.`,
+            )
+            .button("§8§lBack", "textures/ui/arrow_left")
+            .button("§2§lList Item", getStackIcon(sourceStack));
 
-    const res = await confirm.show(player);
-    if (res.canceled || res.selection === 0) return openAhBrowse(player, "", 0);
+        const res = await confirm.show(player);
+        if (res.canceled || res.selection !== 1) return openBack(player, back);
+    }
 
-    return afterTrade(player, listAuctionFromSlot(player, slotIndex, template, amount, priceCents));
+    return afterTrade(player, listAuctionFromSlot(player, slotIndex, template, amount, priceCents), undefined, back);
 }
 
 function afterTrade(player, destination, auctionId, back) {
@@ -459,6 +480,6 @@ function afterTrade(player, destination, auctionId, back) {
         case "mine":
             return openMyAhItems(player, back?.page ?? 0);
         case "browse":
-            return openAhBrowse(player, "", 0);
+            return openBack(player, back);
     }
 }

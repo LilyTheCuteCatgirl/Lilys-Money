@@ -2,12 +2,21 @@ import { system, world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
 import { formatDisplayMoney } from "../economy/formatting.js";
 
+const confirmationDefaults = { confirmBuy: true, confirmSell: true, confirmAuctionBuy: true, confirmAuctionList: true };
+
+function confirmations(source, fallback) {
+    return Object.fromEntries(
+        Object.keys(confirmationDefaults).map((key) => [key, typeof source?.[key] === "boolean" ? source[key] : fallback[key]]),
+    );
+}
+
 let _personalDefaultsCache = null;
 
 export function getMoneyPersonalDefaults() {
     if (_personalDefaultsCache) return _personalDefaultsCache;
 
     const def = {
+        ...confirmationDefaults,
         hud: true,
         notifications: true,
         duration: 3,
@@ -22,6 +31,7 @@ export function getMoneyPersonalDefaults() {
             const parsed = JSON.parse(raw);
 
             _personalDefaultsCache = {
+                ...confirmations(parsed, def),
                 notifications: typeof parsed?.notifications === "boolean" ? parsed.notifications : true,
                 duration: DURATIONS.includes(parsed?.duration) ? parsed.duration : 3,
                 hud: typeof parsed?.hud === "boolean" ? parsed.hud : def.hud,
@@ -42,6 +52,7 @@ export function setMoneyPersonalDefaults(next) {
     const cur = getMoneyPersonalDefaults();
 
     const merged = {
+        ...confirmations(next, cur),
         notifications: next.notifications ?? cur.notifications,
         duration: DURATIONS.includes(next.duration) ? next.duration : cur.duration,
         hud: typeof next?.hud === "boolean" ? next.hud : cur.hud,
@@ -173,7 +184,6 @@ const options = {
     decimal: "Period",
     color: "White",
     boldBalance: true,
-    confirmBuy: true,
     effect: "XP Orb",
     combine: true,
     animate: true,
@@ -197,8 +207,9 @@ function overrides(player) {
     return JSON.parse(player.getDynamicProperty?.(preferenceKey) ?? "{}");
 }
 export function getDisplayOptions(player) {
-    const { notifications, duration } = getMoneyPersonalDefaults();
-    return { ...options, notifications, duration, ...overrides(player) };
+    const defaults = getMoneyPersonalDefaults();
+    const { notifications, duration } = defaults;
+    return { ...options, ...confirmations(defaults, confirmationDefaults), notifications, duration, ...overrides(player) };
 }
 export function saveDisplayOptions(player, changes) {
     player.setDynamicProperty(preferenceKey, JSON.stringify({ ...overrides(player), ...changes }));

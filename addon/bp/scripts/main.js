@@ -105,7 +105,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
             try {
                 sendChat(
                     player,
-                    "§2Scripts v3.4.4 have launched!§r\n§bLily's money Support Discord: §9https://discord.gg/mVJmmAuQeX\n§rremember to use /moneyhelp for commands and /moneysettings for settings.",
+                    "§2Scripts v3.4.5 have launched!§r\n§bLily's money Support Discord: §9https://discord.gg/mVJmmAuQeX\n§rremember to use /moneyhelp for commands and /moneysettings for settings.",
                 );
             } catch {}
         },

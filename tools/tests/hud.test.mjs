@@ -114,6 +114,10 @@ test("existing worlds default the HUD on independently of actionbar; personal ov
         position: "Top right",
         sound: false,
         compact: true,
+        confirmBuy: true,
+        confirmSell: true,
+        confirmAuctionBuy: true,
+        confirmAuctionList: true,
     });
     setMoneyPersonalDefaults({ hud: false, notifications: false });
     assert.deepEqual(JSON.parse(f.properties.get(f.CONFIG.MONEY_PERSONAL_DEFAULTS_DP_KEY)), {
@@ -123,6 +127,10 @@ test("existing worlds default the HUD on independently of actionbar; personal ov
         position: "Top right",
         sound: false,
         compact: true,
+        confirmBuy: true,
+        confirmSell: true,
+        confirmAuctionBuy: true,
+        confirmAuctionList: true,
     });
     f.buyer.hasTag = (tag) => tag === f.CONFIG.PLAYER_HUD_ON_TAG;
     assert.equal(hasMoneyHud(f.buyer), true);
@@ -547,7 +555,7 @@ test("admin defaults select the HUD and corner for unconfigured players, and per
     const replies = [
         { selection: 1 },
         { selection: 1 },
-        { formValues: [false, 2, true, 2, true, false] },
+        { formValues: [false, 2, true, 2, true, false, true, true, true, true] },
         { selection: 7 },
         { selection: 2 },
     ];
@@ -584,4 +592,67 @@ test("each corner routes equal-width packets and stacks all six cards inward wit
         for (let row = 1; row <= 6; row++) assert.equal(layout["$row" + row][1], (bottom ? -1 : 1) * (16 + 13 * (row - 1)));
         assert.equal(layout.$shift_L[0], left ? "-100% - 8px" : "100% + 8px");
     }
+});
+
+test("world sidebar reconciles joins, balances and leaves and only controls its own display", async (t) => {
+    const f = await commerceFixture(t);
+    const { syncMoneySidebar } = await f.load("scripts/modules/economy/display.js");
+    const { saveServerOptions } = await f.load("scripts/modules/settings/server.js");
+    const scores = new Map();
+    const objective = {
+        id: f.CONFIG.MONEY_DISPLAY_OBJECTIVE,
+        getScore: (id) => scores.get(id),
+        setScore: (id, n) => scores.set(id, n),
+        removeParticipant: (id) => scores.delete(id),
+        getParticipants: () => [...scores.keys()],
+    };
+    let displayed,
+        created = 0,
+        assigned = 0,
+        cleared = 0;
+    const board = f.world.scoreboard;
+    const storage = board.getObjective;
+    Object.assign(board, {
+        getObjectiveAtDisplaySlot: () => displayed && { objective: displayed },
+        setObjectiveAtDisplaySlot: (_, d) => {
+            assigned++;
+            displayed = d.objective;
+        },
+        clearObjectiveAtDisplaySlot: () => {
+            cleared++;
+            displayed = undefined;
+        },
+        getObjective: (id) => (id === objective.id ? (created ? objective : undefined) : storage(id)),
+        addObjective: (id) => {
+            assert.equal(id, objective.id);
+            created++;
+            return objective;
+        },
+    });
+    f.online.push(f.buyer);
+    syncMoneySidebar();
+    assert.equal(created, 0);
+    saveServerOptions({ sidebar: true });
+    syncMoneySidebar();
+    assert.equal(scores.get(f.buyer.scoreboardIdentity), 10);
+    f.online.push(f.seller);
+    f.dollars.setScore(f.buyer.scoreboardIdentity, 15);
+    f.cents.setScore(f.buyer.scoreboardIdentity, 75);
+    syncMoneySidebar();
+    assert.equal(scores.get(f.buyer.scoreboardIdentity), 15);
+    assert.equal(scores.get(f.seller.scoreboardIdentity), 0);
+    f.online.shift();
+    syncMoneySidebar();
+    assert.equal(scores.has(f.buyer.scoreboardIdentity), false);
+    assert.equal(assigned, 1);
+    displayed = { id: "minigame" };
+    syncMoneySidebar();
+    saveServerOptions({ sidebar: false });
+    syncMoneySidebar();
+    assert.equal(cleared, 0);
+    assert.equal(displayed.id, "minigame");
+    displayed = objective;
+    syncMoneySidebar();
+    assert.equal(cleared, 1);
+    assert.equal(f.balance(f.buyer), 1575);
 });

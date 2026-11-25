@@ -4,7 +4,7 @@ import { pages, ROOT } from "../../addon/bp/scripts/modules/settings/pages.js";
 
 const expected = {
     "Lily's Money — Settings": ["Personal Settings", "Server Settings"],
-    "Personal Settings": ["HUD & Appearance", "Notifications", "Sounds", "Number Formatting", "Shop Purchases"],
+    "Personal Settings": ["HUD & Appearance", "Notifications", "Sounds", "Number Formatting", "Shop Purchases", "Auction House"],
     "HUD & Appearance": ["Basic HUD Settings", "HUD Theme & Effects"],
     Notifications: ["General Notifications", "Notification Categories", "Notification Details"],
     Sounds: ["General Sound Settings", "Sound Events"],
@@ -166,7 +166,7 @@ test("admin forms discard invalid, stale, cancelled and deauthorized submissions
     let admin = true;
     f.buyer.hasTag = () => admin;
     const show = () => showEditor(f.buyer, "General Economy", true, editorFor("General Economy", f.buyer));
-    for (const input of [{ canceled: true }, { formValues: ["5.005", false] }, { formValues: ["5.00", "invalid"] }]) {
+    for (const input of [{ canceled: true }, { formValues: ["5.005", false, true] }, { formValues: ["5.00", "invalid", true] }]) {
         f.buyer.nextForm = () => input;
         await show();
         assert.equal(getStartMoneyCents(), 0);
@@ -174,14 +174,14 @@ test("admin forms discard invalid, stale, cancelled and deauthorized submissions
     }
     f.buyer.nextForm = () => {
         setStartMoneyCents(700);
-        return { formValues: ["5.00", false] };
+        return { formValues: ["5.00", false, true] };
     };
     await show();
     assert.equal(getStartMoneyCents(), 700);
     assert.equal(serverOptions().pay, true);
     f.buyer.nextForm = () => {
         admin = false;
-        return { formValues: ["5.00", false] };
+        return { formValues: ["5.00", false, true] };
     };
     await show();
     assert.equal(getStartMoneyCents(), 700);
@@ -294,4 +294,20 @@ test("revoked admin access routes stale server selections to Personal Settings a
     };
     await openSettings(f.buyer);
     assert.deepEqual(seen, [ROOT, "Personal Settings"]);
+});
+
+test("legacy confirmBuy persists across reconnects while missing preferences inherit the current world defaults", async (t) => {
+    const f = await packFixture(t);
+    const prefs = await f.load("scripts/modules/players/preferences.js");
+    let stored = JSON.stringify({ confirmBuy: false, color: "Pink" });
+    const reconnect = () => ({ getDynamicProperty: () => stored, setDynamicProperty: (_, value) => (stored = value) });
+    const keys = ["confirmBuy", "confirmSell", "confirmAuctionBuy", "confirmAuctionList"];
+    const flags = (p) => keys.map((k) => prefs.getDisplayOptions(p)[k]);
+    assert.deepEqual(flags({}), [true, true, true, true]);
+    assert.deepEqual(flags(reconnect()), [false, true, true, true]);
+    prefs.setMoneyPersonalDefaults({ confirmSell: false, confirmAuctionList: false });
+    prefs.saveDisplayOptions(reconnect(), { confirmSell: true, confirmAuctionBuy: false });
+    assert.deepEqual(flags({}), [true, false, true, false]);
+    assert.deepEqual(flags(reconnect()), [false, true, false, false]);
+    assert.equal(prefs.getDisplayOptions(reconnect()).color, "Pink");
 });

@@ -22,7 +22,14 @@ import { getStartMoneyCents, setStartMoneyCents } from "../economy/balance.js";
 import { getMoneyLoggingEnabled, setMoneyLoggingEnabled } from "../logging/moneylogging.js";
 
 const personal = {
-    "Shop Purchases": [["confirmBuy", "Confirm Shop Purchases (when enabled by server)"]],
+    "Shop Purchases": [
+        ["confirmBuy", "Confirm Shop Purchases"],
+        ["confirmSell", "Confirm Shop Sales"],
+    ],
+    "Auction House": [
+        ["confirmAuctionBuy", "Confirm Auction Purchases"],
+        ["confirmAuctionList", "Confirm New Auction Listings"],
+    ],
     "Basic HUD Settings": [
         ["hud", "Enable Money HUD"],
         ["position", "HUD Position", HUD_POSITIONS],
@@ -76,6 +83,10 @@ const defaults = [
     ["duration", "Default Notification Duration (seconds)", DURATIONS],
     ["sound", "Money Sounds Enabled by Default"],
     ["compact", "Compact Numbers Enabled by Default"],
+    ["confirmBuy", "Default Shop Purchase Confirmation"],
+    ["confirmSell", "Default Shop Sale Confirmation"],
+    ["confirmAuctionBuy", "Default Auction Purchase Confirmation"],
+    ["confirmAuctionList", "Default New Auction Listing Confirmation"],
 ];
 function money(raw) {
     if (!/^\d+(?:[.,]\d{1,2})?$/.test(raw)) return;
@@ -115,15 +126,16 @@ export function editorFor(name, p) {
             [
                 ["start", "Starting Money", "text", money],
                 ["pay", "Enable /pay"],
+                ["sidebar", "Enable Money Sidebar"],
             ],
-            () => ({ start: getStartMoneyCents() / 100, pay: serverOptions().pay }),
-            (v) => {
+            () => ({ start: getStartMoneyCents() / 100, pay: serverOptions().pay, sidebar: serverOptions().sidebar }),
+            ({ start, ...options }) => {
                 const before = getStartMoneyCents();
-                if ("start" in v) setStartMoneyCents(Math.round(v.start * 100));
+                if (start !== undefined) setStartMoneyCents(Math.round(start * 100));
                 try {
-                    if ("pay" in v) saveServerOptions({ pay: v.pay });
+                    if (Object.keys(options).length) saveServerOptions(options);
                 } catch (error) {
-                    if ("start" in v) setStartMoneyCents(before);
+                    if (start !== undefined) setStartMoneyCents(before);
                     throw error;
                 }
             },

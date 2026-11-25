@@ -26,7 +26,7 @@ function cardGroup(description, key) {
     if (["Money added", "Money removed", "Balance set"].includes(description)) return "admin";
     return "other";
 }
-export function enqueueCard(state, cents, description, now, key = description) {
+export function enqueueCard(state, cents, description, now, key = description, itemQuantity) {
     const group = cardGroup(description, key);
     const options = state.options ?? {};
     if (options.notifications === false || options[group] === false || (cents < 0 && options.spending === false)) return;
@@ -37,6 +37,7 @@ export function enqueueCard(state, cents, description, now, key = description) {
     const active = state.rows.find(matches);
     if (active) {
         active.count++;
+        if (itemQuantity !== undefined) active.itemQuantity += itemQuantity;
         active.cents += cents;
         if (now >= active.holdUntil) {
             // Retrace only the part of the exit this card has already travelled.
@@ -50,7 +51,7 @@ export function enqueueCard(state, cents, description, now, key = description) {
         .replace(/~LM3:/g, "")
         .trim()
         .slice(0, 60);
-    const row = { key, group, description: label, cents, count: 1 };
+    const row = { key, group, description: label, cents, count: 1, itemQuantity };
     if (state.rows.length < ROWS) {
         state.rows.push({ ...row, start: now, holdUntil: now + ENTER + hold(state) });
         return;
@@ -59,6 +60,7 @@ export function enqueueCard(state, cents, description, now, key = description) {
     if (queued) {
         queued.cents += cents;
         queued.count++;
+        if (itemQuantity !== undefined) queued.itemQuantity += itemQuantity;
     } else if (state.waiting.length < 12) state.waiting.push(row);
     else {
         const summaryKey = sign > 0 ? "overflow-credit" : "overflow-debit";
@@ -70,11 +72,11 @@ export function enqueueCard(state, cents, description, now, key = description) {
     }
 }
 
-export function observeBalance(state, total, now, description, key) {
+export function observeBalance(state, total, now, description, key, itemQuantity) {
     if (total === undefined) return;
     if (description !== null && state.observed !== undefined && total !== state.observed) {
         const delta = total - state.observed;
-        enqueueCard(state, delta, description ?? (delta > 0 ? "Money received" : "Money spent"), now, key);
+        enqueueCard(state, delta, description ?? (delta > 0 ? "Money received" : "Money spent"), now, key, itemQuantity);
     }
     if (total !== state.observed) state.nextFrame = 0;
     state.observed = total;
@@ -93,11 +95,18 @@ function notificationLine(row, now, options) {
     const credit = row.cents > 0;
     const color = credit ? "§a" : "§c";
     const amount = (credit ? "+" : "") + formatCents(row.cents).replace("$", "");
-    const count = options?.quantity !== false && (row.count > 1 || row.key.startsWith("job:break:")) ? ` §cx${row.count}` : "";
-    const label =
+    let count = options?.quantity !== false && (row.count > 1 || row.key.startsWith("job:break:")) ? ` §cx${row.count}` : "";
+    let label =
         options?.names === false
             ? ({ job: "Job reward", shop: "Shop transaction", auction: "Auction transaction" }[row.group] ?? row.description)
             : row.description;
+    if (row.itemQuantity !== undefined && options?.quantity !== false) {
+        if (options?.names === false) count = ` §cx${row.itemQuantity}`;
+        else {
+            label = label.replace(/^(Shop: (?:bought|sold)) /, `$1 ${row.itemQuantity} `);
+            count = "";
+        }
+    }
     return phase + color + label.replace(/~/g, "～") + count + (credit ? " §2§l" : " §4§l") + amount;
 }
 

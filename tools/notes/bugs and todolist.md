@@ -9,26 +9,6 @@ normaly should be posible https://feedback.minecraft.net/hc/en-us/articles/49852
 
 // TODO: add support for potions in /ah and /shop
 
-// TODO: add more options to /moneysettings
-adding options 
-- for text colors 
-- /ah durations
-- /ah limits
-- revemping its ui not be be all in one huge ui but have categorys like general settings + scoreboard settings + /ah settings...
-- changing the money scoreboard (with a pulldown menu with all the scoreboards)
-
-
-// TODO: fix HUD when buying in shop for exemple 30 breas only saying bougth bread whiout telling the number
-
-// TODO: when /shop <> if you use the back button after clicking an item it ddoesnt bring you to the same menu as before but it brings you to that items category
-
-// TODO: add a button in /ah my items to sell
-
-// TODO: add toggle for /ah confirmation in the /moneysettings
-
-// TODO: make enchants visible in the /ah page whiout opening it
-    especialy for enchanted books
-
 
 # later planned ideas:
 

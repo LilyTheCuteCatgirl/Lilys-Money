@@ -34,7 +34,7 @@ const QUICK_START_BODY =
     "§8Need more details? Open the Commands section.";
 
 const CREDITS_BODY =
-    "§d§lLily's Money v3.4.4§r\n\n" +
+    "§d§lLily's Money v3.4.5§r\n\n" +
     "§fMade by: §dLilyTheCatgirl§r\n" +
     "§fMinecraft name: §dLilyTheCat9862§r\n" +
     "§8You can friend me to join my maps if you want!\n\n" +

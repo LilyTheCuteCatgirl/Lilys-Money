@@ -16,7 +16,10 @@ export async function commerceFixture(t) {
     }
     const dollars = objective(),
         cents = objective();
-    world.scoreboard = { getObjective: (id) => (id === CONFIG.MONEY_DOLLAR_OBJECTIVE ? dollars : cents) };
+    world.scoreboard = {
+        getObjectiveAtDisplaySlot: () => undefined,
+        getObjective: (id) => (id === CONFIG.MONEY_DOLLAR_OBJECTIVE ? dollars : cents),
+    };
     const online = [];
     world.getAllPlayers = () => online;
     function makePlayer(id, name, balance) {

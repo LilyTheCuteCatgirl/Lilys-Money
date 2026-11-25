@@ -98,7 +98,7 @@ export function syncMoneyHud(player) {
 }
 
 // Reconcile external changes first, then advance to the committed balance before the next poll.
-export function recordHudChange(player, before, after, description, key) {
+export function recordHudChange(player, before, after, description, key, itemQuantity) {
     const session = sessions.get(player.id);
     if (!session) return;
     const state = session.state;
@@ -107,7 +107,7 @@ export function recordHudChange(player, before, after, description, key) {
         state.observed = undefined;
         return;
     }
-    observeBalance(state, after, system.currentTick, before === undefined ? null : (description ?? null), key);
+    observeBalance(state, after, system.currentTick, before === undefined ? null : (description ?? null), key, itemQuantity);
 }
 
 // Pending auction receipts and two-party payments already settled their wallet balances.
