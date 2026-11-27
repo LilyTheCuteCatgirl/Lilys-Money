@@ -138,10 +138,10 @@ function describeStack(stack) {
 
 export async function openAhEntry(player, rawArg = "") {
     if (!serverOptions().auctions) return openMyAhItems(player);
-    processAhExpirations();
+    const checkedAuctions = processAhExpirations();
 
     const arg = String(rawArg ?? "").trim();
-    if (!arg) return openAhBrowse(player, "", 0);
+    if (!arg) return openAhBrowse(player, "", 0, checkedAuctions);
 
     const parts = arg.split(/\s+/).filter(Boolean);
     if (parts[0]?.toLowerCase() === "sell") {
@@ -149,11 +149,11 @@ export async function openAhEntry(player, rawArg = "") {
         return openAhSellEntry(player, priceRaw);
     }
 
-    return openAhBrowse(player, arg, 0);
+    return openAhBrowse(player, arg, 0, checkedAuctions);
 }
 
-async function openAhBrowse(player, query = "", page = 0) {
-    const matches = searchAuctions(query);
+async function openAhBrowse(player, query = "", page = 0, checkedAuctions) {
+    const matches = searchAuctions(query, checkedAuctions);
     const totalPages = Math.max(1, Math.ceil(matches.length / AH_PAGE_SIZE));
     page = Math.max(0, Math.min(totalPages - 1, Math.floor(Number(page) || 0)));
 

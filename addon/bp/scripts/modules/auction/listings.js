@@ -76,7 +76,8 @@ export function processAhExpirations() {
 
     for (const id of touchedSellers) enforceExpiredCapForSeller(ah, id);
 
-    if (changed) saveAh(ah);
+    if (!changed) return ah;
+    saveAh(ah);
 }
 
 function buildSearchText(auction) {
@@ -91,8 +92,7 @@ function buildSearchText(auction) {
     return `${id} ${short} ${spaced} ${name} ${seller} ${lore}`;
 }
 
-export function searchAuctions(query) {
-    const ah = loadAh();
+export function searchAuctions(query, ah = loadAh()) {
     const tokens = searchTokens(query);
     const active = ah.auctions.filter((a) => a.status === "active");
 
