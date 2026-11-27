@@ -5,13 +5,17 @@ import { deflateRawSync } from "node:zlib";
 
 const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, i) => {
     let c = i;
+
     for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+
     return c >>> 0;
 });
 
 function crc32(data) {
     let crc = 0xffffffff;
+
     for (const b of data) crc = CRC_TABLE[(crc ^ b) & 0xff] ^ (crc >>> 8);
+
     return (crc ^ 0xffffffff) >>> 0;
 }
 
@@ -19,19 +23,23 @@ function dosDateTime(date) {
     const year = Math.max(1980, Math.min(2107, date.getFullYear()));
     const d = ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
     const t = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
+
     return { date: d, time: t };
 }
 
 function listFiles(dir, prefix) {
     const files = [];
+
     for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
         const file = path.join(dir, entry.name);
         // Do not include source-control placeholders, even if a user stages them.
         if (entry.name === ".gitkeep") continue;
+
         const name = `${prefix}/${entry.name}`;
         if (entry.isDirectory()) files.push(...listFiles(file, name));
         else if (entry.isFile()) files.push({ source: file, name: name.replaceAll("\\", "/") });
     }
+
     return files;
 }
 
@@ -88,6 +96,7 @@ export function writeAddonZip(outputFile, folders) {
     if (entries.length > 65535 || offset + centralSize >= 0xffffffff) {
         throw new Error("ZIP64 archives are not supported by this small build script.");
     }
+
     const end = Buffer.alloc(22);
     end.writeUInt32LE(0x06054b50, 0);
     end.writeUInt16LE(entries.length, 8);
@@ -96,5 +105,6 @@ export function writeAddonZip(outputFile, folders) {
     end.writeUInt32LE(offset, 16);
     fs.mkdirSync(path.dirname(outputFile), { recursive: true });
     fs.writeFileSync(outputFile, Buffer.concat([...fileParts, ...centralParts, end]));
+
     return entries.length;
 }

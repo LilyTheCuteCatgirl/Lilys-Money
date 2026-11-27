@@ -90,6 +90,7 @@ const defaults = [
 ];
 function money(raw) {
     if (!/^\d+(?:[.,]\d{1,2})?$/.test(raw)) return;
+
     const amount = Number(raw.replace(",", "."));
     if (amount <= 2147483647.99) return amount;
 }
@@ -100,6 +101,7 @@ export function editorFor(name, p) {
             personal[name],
             () => {
                 const options = getDisplayOptions(p);
+
                 return {
                     ...options,
                     hud: hasMoneyHud(p),
@@ -116,6 +118,7 @@ export function editorFor(name, p) {
                 if ("position" in changes) setHudPosition(p, changes.position);
                 if ("sound" in changes) setMoneySound(p, changes.sound);
                 if ("mode" in changes) setCompactMoney(p, changes.mode === "Compact");
+
                 const options = Object.fromEntries(
                     Object.entries(changes).filter(([key]) => !["hud", "position", "sound", "mode"].includes(key)),
                 );

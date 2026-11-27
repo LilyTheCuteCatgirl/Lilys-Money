@@ -52,13 +52,31 @@ export default [
             "no-unused-labels": "error",
             "use-isnan": "error",
             "valid-typeof": "error",
+            quotes: ["error", "double", { avoidEscape: true }],
+            "one-var": ["error", "never"],
+            "padding-line-between-statements": [
+                "error",
+
+                // Leave space after the imports. Allow related imports to stay together.
+                { blankLine: "always", prev: "import", next: "*" },
+                { blankLine: "never", prev: "import", next: "import" },
+
+                // Leave space between a guard and the variables used after it.
+                { blankLine: "always", prev: "if", next: ["const", "let"] },
+
+                // Separate the setup from the loop that uses it.
+                { blankLine: "always", prev: ["const", "let"], next: ["for", "while", "do"] },
+
+                // Give the result its own line of breathing room.
+                { blankLine: "always", prev: "*", next: "return" },
+            ],
             // Warnings: useful cleanup hints that won't block a release by themselves.
             eqeqeq: ["warn", "always", { null: "ignore" }],
             "no-constant-condition": ["warn", { checkLoops: false }],
             "no-empty": ["warn", { allowEmptyCatch: true }],
             "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "none" }],
-            "no-var": "warn",
-            "prefer-const": "warn",
+            "no-var": "error",
+            "prefer-const": "error",
             // Existing patterns: keep deliberate behavior unchanged.
             "no-promise-executor-return": "off",
         },

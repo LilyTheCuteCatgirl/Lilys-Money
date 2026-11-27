@@ -12,6 +12,7 @@ async function auctionFixture(t) {
     const stack = new ItemStack("minecraft:stone", 2);
     seller.inventory.setItem(0, stack);
     const list = () => trading.listAuctionFromSlot(seller, 0, stackToTemplate(stack), 2, 125);
+
     return { ...f, ...trading, loadAh, list };
 }
 
@@ -65,6 +66,7 @@ for (const failure of ["seller score", "inventory", "storage", "offline identity
         if (failure === "no money") f.dollars.setScore(f.buyer.scoreboardIdentity, 0);
         if (failure === "full inventory") for (let i = 0; i < 3; i++) f.buyer.inventory.setItem(i, new f.ItemStack("minecraft:dirt", 64));
         if (failure === "disconnect") f.buyer.getComponent = () => undefined;
+
         const before = f.balance(f.buyer);
         f.buyAuction(f.buyer, "1");
         assert.equal(f.loadAh().auctions.length, 1);
@@ -82,6 +84,7 @@ test("cancel and expired claim return an item only to its seller once", async (t
     assert.equal(f.seller.inventory.getItem(0).amount, 2);
     f.list();
     const { advanceAhClock, AH_ACTIVE_TICKS, AH_CLOCK_INTERVAL_TICKS } = await f.load("scripts/modules/auction/clock.js");
+
     for (let tick = 0; tick < AH_ACTIVE_TICKS; tick += AH_CLOCK_INTERVAL_TICKS) advanceAhClock();
     const { processAhExpirations } = await f.load("scripts/modules/auction/listings.js");
     processAhExpirations();
@@ -103,9 +106,11 @@ async function shopFixture(t) {
         f.buyer.nextForm = () => {
             if (count++ === 0) return { formValues: [String(qty)] };
             onConfirm();
+
             return { selection: 1 };
         };
     }
+
     return { ...f, ...trade, forms };
 }
 test("shop purchase and ordinary type-ID sale use configured cent prices", async (t) => {
@@ -140,6 +145,7 @@ for (const reason of ["invalid quantity", "money changed", "inventory filled", "
 }
 test("shop sale restores an earlier slot if removing a later slot fails", async (t) => {
     const f = await shopFixture(t);
+
     for (let i = 0; i < 2; i++) f.buyer.inventory.setItem(i, new f.ItemStack(offer.id, 1));
     const write = f.buyer.inventory.setItem;
     f.buyer.inventory.setItem = (i, v) => {
@@ -157,6 +163,7 @@ test("shop sale restores an earlier slot if removing a later slot fails", async 
 
 test("quick listing rejects potions and shulker boxes before removing the stack", async (t) => {
     const f = await auctionFixture(t);
+
     for (const id of ["minecraft:potion", "minecraft:splash_potion", "minecraft:lingering_potion", "minecraft:red_shulker_box"]) {
         f.seller.inventory.setItem(0, new f.ItemStack(id));
         f.listAuctionFromSlot(f.seller, 0, { typeId: id }, 1, 125);
@@ -197,6 +204,7 @@ test("an old potion listing survives purchase, cancellation and expired collecti
 async function captureHud(f) {
     const { syncMoneyHud } = await f.load("scripts/modules/hud/manager.js");
     const titles = new Map();
+
     for (const player of [f.buyer, f.seller]) {
         player.onScreenDisplay = {
             setTitle(text) {
@@ -205,17 +213,19 @@ async function captureHud(f) {
         };
         syncMoneyHud(player);
     }
+
     return (player) => {
         for (const timer of f.intervals.values()) if (timer.ticks === 1) timer.callback();
         const [wallet, ...rows] = titles.get(player).split("\n");
         assert.equal(wallet.slice("~LM3:B§f§l".length).trim(), formatCents(f.balance(player)));
+
         return rows.map((row) => row.slice(1).replace(/~+$/, "").replace(/§./g, ""));
     };
 }
 
 test("shop receipts report actual buys and sells and survive the next poll", async (t) => {
-    const f = await shopFixture(t),
-        read = await captureHud(f);
+    const f = await shopFixture(t);
+    const read = await captureHud(f);
     f.forms(2);
     await f.flowBuy(f.buyer, offer);
     assert.deepEqual(read(f.buyer), ["Shop: bought 2 Stone -2.50"]);
@@ -228,8 +238,8 @@ test("shop receipts report actual buys and sells and survive the next poll", asy
 });
 
 test("auction cards appear for both players only after commit", async (t) => {
-    const f = await auctionFixture(t),
-        read = await captureHud(f);
+    const f = await auctionFixture(t);
+    const read = await captureHud(f);
     f.online.push(f.buyer, f.seller);
     f.list();
     const write = f.world.setDynamicProperty;
@@ -249,8 +259,8 @@ test("auction cards appear for both players only after commit", async (t) => {
 });
 
 test("pay checks funds and posts one signed receipt for each party", async (t) => {
-    const f = await commerceFixture(t),
-        read = await captureHud(f);
+    const f = await commerceFixture(t);
+    const read = await captureHud(f);
     const { registerPayCommand } = await f.load("scripts/commands/pay.js");
     let pay;
     registerPayCommand({
@@ -283,10 +293,10 @@ async function command(f, module, register, origin, ...args) {
 }
 
 test("command-block adjustments use the actual signed change including unchanged and capped balances", async (t) => {
-    const f = await commerceFixture(t),
-        read = await captureHud(f),
-        origin = { sourceBlock: {} },
-        target = [f.buyer];
+    const f = await commerceFixture(t);
+    const read = await captureHud(f);
+    const origin = { sourceBlock: {} };
+    const target = [f.buyer];
     await command(f, "setmoney", "registerSetMoneyCommand", origin, target, -2);
     await command(f, "setmoney", "registerSetMoneyCommand", origin, target, -2);
     await command(f, "addmoney", "registerAddMoneyCommand", origin, target, 0.5);
@@ -302,9 +312,9 @@ test("command-block adjustments use the actual signed change including unchanged
 });
 
 test("command-block item trades report only real inventory transactions", async (t) => {
-    const f = await commerceFixture(t),
-        read = await captureHud(f),
-        origin = { sourceBlock: {} };
+    const f = await commerceFixture(t);
+    const read = await captureHud(f);
+    const origin = { sourceBlock: {} };
     f.online.push(f.buyer);
     const args = [origin, "Buyer", { id: "minecraft:stone" }, 2, 0.75];
     await command(f, "sell", "registerSellCommand", ...args);
@@ -316,6 +326,7 @@ test("command-block item trades report only real inventory transactions", async 
 
 test("offline sale records produce one combined card on reconnect and survive a failed receipt save", async (t) => {
     const f = await auctionFixture(t);
+
     for (const id of ["1", "2"]) {
         f.seller.inventory.setItem(0, new f.ItemStack("minecraft:stone", 2));
         f.list();
@@ -345,8 +356,8 @@ test("offline sale records produce one combined card on reconnect and survive a 
 });
 
 test("a partial legacy payment produces no success receipt for either player", async (t) => {
-    const f = await commerceFixture(t),
-        read = await captureHud(f);
+    const f = await commerceFixture(t);
+    const read = await captureHud(f);
     const write = f.cents.setScore;
     f.cents.setScore = (id, v) => {
         if (id === f.seller.scoreboardIdentity) throw Error("write failed");
@@ -359,8 +370,8 @@ test("a partial legacy payment produces no success receipt for either player", a
 });
 
 test("a disabled HUD does not replay earlier payments on enable", async (t) => {
-    const f = await commerceFixture(t),
-        read = await captureHud(f);
+    const f = await commerceFixture(t);
+    const read = await captureHud(f);
     const { syncMoneyHud } = await f.load("scripts/modules/hud/manager.js");
     (await f.load("scripts/modules/players/preferences.js")).setMoneyPersonalDefaults({ notifications: false });
     f.buyer.hasTag = (tag) => tag === f.CONFIG.PLAYER_HUD_OFF_TAG;
@@ -395,8 +406,8 @@ test("initial spawn awards starting money once and respawn generates no card", a
 });
 
 test("shop inventory failure after debit rolls the wallet back without a HUD receipt", async (t) => {
-    const f = await shopFixture(t),
-        read = await captureHud(f);
+    const f = await shopFixture(t);
+    const read = await captureHud(f);
     f.buyer.inventory.setItem = () => {
         throw Error("locked");
     };
@@ -408,8 +419,8 @@ test("shop inventory failure after debit rolls the wallet back without a HUD rec
 });
 
 test("legacy sell slot-clear failure retains its financial behavior but suppresses the sale card", async (t) => {
-    const f = await commerceFixture(t),
-        read = await captureHud(f);
+    const f = await commerceFixture(t);
+    const read = await captureHud(f);
     f.online.push(f.buyer);
     f.buyer.inventory.setItem(0, new f.ItemStack("minecraft:stone", 1));
     f.buyer.inventory.setItem = () => {

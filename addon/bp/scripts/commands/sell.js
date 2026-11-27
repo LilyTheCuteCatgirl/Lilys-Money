@@ -17,6 +17,7 @@ function getRef(origin) {
             return { dimId: origin.sourceBlock.dimension.id, loc: origin.sourceBlock.location, self: null };
         } catch {}
     }
+
     return { dimId: null, loc: null, self: null };
 }
 
@@ -26,8 +27,10 @@ function nearestPlayer(ref) {
 
     let best = null;
     let bestD2 = Infinity;
+
     for (const p of players) {
         if (p.dimension.id !== ref.dimId) continue;
+
         const l = p.location;
         const dx = l.x - ref.loc.x;
         const dy = l.y - ref.loc.y;
@@ -38,12 +41,14 @@ function nearestPlayer(ref) {
             best = p;
         }
     }
+
     return best ?? players[0] ?? null;
 }
 
 function randomPlayer() {
     const players = world.getAllPlayers();
     if (players.length === 0) return null;
+
     return players[Math.floor(Math.random() * players.length)];
 }
 
@@ -53,6 +58,7 @@ function findByName(nameRaw) {
     for (const p of world.getAllPlayers()) {
         if (p.name.toLowerCase() === name) return p;
     }
+
     return null;
 }
 
@@ -67,6 +73,7 @@ function resolveTarget(origin, raw) {
         if (low === "@p") return nearestPlayer(ref);
         if (low === "@r") return randomPlayer();
         if (low === "@s") return ref.self;
+
         return null;
     }
 
@@ -76,7 +83,7 @@ function resolveTarget(origin, raw) {
 export function registerSellCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:sell`,
+            name: "lilymoney:sell",
             description: "Admin/CB: take item(s) and pay money. Price is per item. /sell <player|@p|@r|@s> <item> <amount> <priceEach>",
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,
@@ -101,6 +108,7 @@ export function registerSellCommand(customCommandRegistry) {
 
             const parsed = parseFloatToCents(priceFloat, false);
             if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: chatText(parsed.error) };
+
             const unitPrice = parsed.cents;
             if (unitPrice < 0) return { status: CustomCommandStatus.Failure, message: chatText("Price must not be negative.") };
 
@@ -122,18 +130,21 @@ export function registerSellCommand(customCommandRegistry) {
                 const inv = getInventoryContainer(target);
                 if (!inv) {
                     sendChat(target, "§cNo inventory container.");
+
                     return;
                 }
 
                 const have = countItems(inv, itemId);
                 if (have < amountItems) {
                     sendChat(target, `§cNot enough §f${itemId}§c. You have §e${have}§c/${amountItems}.`);
+
                     return;
                 }
 
                 const removed = removeItems(inv, itemId, amountItems);
                 if (removed < amountItems) {
                     sendChat(target, "§cError removing items.");
+
                     return;
                 }
 

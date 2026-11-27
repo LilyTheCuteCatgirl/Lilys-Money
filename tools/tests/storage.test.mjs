@@ -50,6 +50,7 @@ test("canonical chunks override older names and legacy-only names survive a relo
     db.flushSavedPlayerNames();
     scheduled.shift()();
     const next = await packFixture(t);
+
     for (const [key, value] of properties) next.properties.set(key, value);
     const reloaded = await next.load(databasePath);
     assert.deepEqual(Object.fromEntries(reloaded.getAllSavedPlayerNameEntries().map(({ identityId, name }) => [identityId, name])), {
@@ -170,6 +171,7 @@ test("main links the pack, registers commands, installs form layouts and saves a
     ];
     assert.deepEqual(commands.sort(), expected.map((name) => "lilymoney:" + name).sort());
     const { ActionFormData, ModalFormData } = await load("node_modules/@minecraft/server-ui/index.js");
+
     for (const form of [ActionFormData, ModalFormData]) assert.equal(typeof form.prototype.use8CrafterLayout, "function");
     const p = { id: "runtime", name: "Quick", hasTag: () => false, scoreboardIdentity: undefined };
     world.afterEvents.playerSpawn.emit({ initialSpawn: true, player: p });

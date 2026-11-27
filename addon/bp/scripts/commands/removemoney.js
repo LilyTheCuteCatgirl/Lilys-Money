@@ -9,7 +9,7 @@ import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 export function registerRemoveMoneyCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:removemoney`,
+            name: "lilymoney:removemoney",
             description: "Admin/CB: remove money (can go negative) /removemoney <selector> <amount>",
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,

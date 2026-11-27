@@ -12,5 +12,6 @@ export function configuredInterval(key, callback) {
         const ticks = serverOptions()[key];
         id = system.runInterval(() => callback(ticks), ticks);
     });
+
     return () => system.clearRun(id);
 }

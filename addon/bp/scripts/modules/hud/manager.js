@@ -12,11 +12,13 @@ function readBalance(player) {
     const dollars = world.scoreboard.getObjective(CONFIG.MONEY_DOLLAR_OBJECTIVE);
     const cents = world.scoreboard.getObjective(CONFIG.MONEY_CENT_OBJECTIVE);
     if (!identity || !dollars || !cents) return undefined;
+
     return (dollars.getScore(identity) ?? 0) * 100 + (cents.getScore(identity) ?? 0);
 }
 
 function pulse() {
     const tick = system.currentTick;
+
     for (const session of sessions.values()) {
         try {
             if (tick >= session.nextPoll || session.state.observed === undefined) {
@@ -62,6 +64,7 @@ export function syncMoneyHud(player) {
             }
             if (interval === undefined) interval = system.runInterval(pulse, 1);
         }
+
         const session = sessions.get(player.id);
         if (session.state.wallet !== wallet || JSON.stringify(session.state.options) !== JSON.stringify(options)) {
             const old = session.state.options;
@@ -88,12 +91,14 @@ export function syncMoneyHud(player) {
             session.state.route = route;
             session.state.nextFrame = 0;
         }
+
         return true;
     }
     if (active) {
         player.onScreenDisplay.setTitle("~LM3:R", { fadeInDuration: 0, stayDuration: 2, fadeOutDuration: 0 });
         forget(player.id);
     }
+
     return false;
 }
 
@@ -101,10 +106,12 @@ export function syncMoneyHud(player) {
 export function recordHudChange(player, before, after, description, key, itemQuantity) {
     const session = sessions.get(player.id);
     if (!session) return;
+
     const state = session.state;
     if (before !== undefined) observeBalance(state, before, system.currentTick);
     if (after === undefined) {
         state.observed = undefined;
+
         return;
     }
     observeBalance(state, after, system.currentTick, before === undefined ? null : (description ?? null), key, itemQuantity);

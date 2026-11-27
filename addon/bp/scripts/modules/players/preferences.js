@@ -45,6 +45,7 @@ export function getMoneyPersonalDefaults() {
     } catch {}
 
     _personalDefaultsCache = def;
+
     return def;
 }
 
@@ -78,6 +79,7 @@ export function getHudPosition(player) {
     for (const position of HUD_POSITIONS) {
         if (player.hasTag("lilymoney:hud_" + position.toLowerCase().replace(" ", "_"))) return position;
     }
+
     return getMoneyPersonalDefaults().position;
 }
 
@@ -93,6 +95,7 @@ export function setHudPosition(player, selected) {
 export function hasMoneyHud(player) {
     if (player.hasTag(CONFIG.PLAYER_HUD_ON_TAG)) return true;
     if (player.hasTag(CONFIG.PLAYER_HUD_OFF_TAG)) return false;
+
     return getMoneyPersonalDefaults().hud;
 }
 
@@ -163,6 +166,7 @@ export function playMoneySound(player, event = "receive") {
         try {
             if (typeof player.playSound === "function") {
                 player.playSound("random.orb", { volume, pitch });
+
                 return;
             }
         } catch {}
@@ -209,6 +213,7 @@ function overrides(player) {
 export function getDisplayOptions(player) {
     const defaults = getMoneyPersonalDefaults();
     const { notifications, duration } = defaults;
+
     return { ...options, ...confirmations(defaults, confirmationDefaults), notifications, duration, ...overrides(player) };
 }
 export function saveDisplayOptions(player, changes) {

@@ -14,7 +14,7 @@
     "sv": "node tools/set-version.mjs",
     "validate": "node tools/validate.mjs",
     "lint": "eslint \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\" && prettier --check \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\"",
-    "lint:fix": "prettier --write \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\" && eslint \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\" --fix",
+    "lint:fix": "eslint \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\" --fix && npm run format",
     "format": "prettier --write \"addon/bp/scripts/**/*.js\" \"tools/**/*.mjs\" \"eslint.config.js\"",
     "test": "node --test"
   },

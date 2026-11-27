@@ -49,6 +49,7 @@ function getSelectedSlotIndex(player) {
         const v = player.selectedSlotIndex;
         if (Number.isInteger(v) && v >= 0) return v;
     } catch {}
+
     return 0;
 }
 
@@ -57,6 +58,7 @@ function daysLeftText(tickValue) {
     if (left <= 0) return "expired";
 
     const days = Math.ceil(left / TICKS_PER_DAY);
+
     return `${days}d`;
 }
 
@@ -67,8 +69,10 @@ function getAuctionIcon(auctionOrTemplate) {
 function enchantmentSummary(a) {
     const enchants = a.template?.enchantments;
     if (!enchants?.length) return "";
+
     const first = enchants[0];
     const remaining = enchants.length > 1 ? ` +${enchants.length - 1} more` : "";
+
     return ` §r§5${niceIdName(first.id)} ${romanLevel(first.level)}${remaining}`;
 }
 
@@ -133,11 +137,13 @@ function describeStack(stack) {
     if (Array.isArray(template?.lore) && template.lore.length > 0) bits.push(`§b${template.lore.length} lore`);
 
     const extra = bits.length ? ` §l| ${bits.join(" §l| ")}` : "";
+
     return `§f${name} §lx${stack.amount}${extra}`;
 }
 
 export async function openAhEntry(player, rawArg = "") {
     if (!serverOptions().auctions) return openMyAhItems(player);
+
     const checkedAuctions = processAhExpirations();
 
     const arg = String(rawArg ?? "").trim();
@@ -146,6 +152,7 @@ export async function openAhEntry(player, rawArg = "") {
     const parts = arg.split(/\s+/).filter(Boolean);
     if (parts[0]?.toLowerCase() === "sell") {
         const priceRaw = parts.length >= 2 ? parts.slice(1).join(" ") : "";
+
         return openAhSellEntry(player, priceRaw);
     }
 
@@ -205,6 +212,7 @@ async function openAuctionDetails(player, auctionId, back = { type: "browse", qu
     const a = findAuctionById(auctionId);
     if (!a) {
         msg(player, "§cThat auction no longer exists.");
+
         return openBack(player, back);
     }
 
@@ -247,6 +255,7 @@ async function openAuctionDetails(player, auctionId, back = { type: "browse", qu
 
 async function openBack(player, back) {
     if (back?.type === "my") return openMyAhItems(player, back.page ?? 0);
+
     return openAhBrowse(player, back?.query ?? "", back?.page ?? 0);
 }
 
@@ -256,6 +265,7 @@ async function openBuyAuctionConfirm(player, auctionId, back) {
 
     if (sameSeller(player, a)) {
         msg(player, "§cYou cannot buy your own auction.");
+
         return openAuctionDetails(player, auctionId, back);
     }
 
@@ -282,6 +292,7 @@ async function openMyAhItems(player, page = 0) {
     const ah = loadAh();
     const mine = getPlayerAuctions(ah, player).sort((a, b) => {
         if (a.status !== b.status) return a.status === "active" ? -1 : 1;
+
         return b.createdAt - a.createdAt;
     });
 
@@ -333,6 +344,7 @@ async function openMyAhItems(player, page = 0) {
 
     const res = await form.show(player);
     if (res.canceled || actions[res.selection]?.type === "back") return serverOptions().auctions ? openAhBrowse(player, "", 0) : undefined;
+
     const action = actions[res.selection];
     if (!action) return;
     if (action.type === "sell") return openAhInventoryPicker(player, { type: "my", page });
@@ -347,7 +359,7 @@ async function openCancelAuctionConfirm(player, auctionId, back) {
     const confirm = new ActionFormData()
         .title(ahTitle("§c§lCancel Auction?"))
         .body(
-            `§c§lCancel this listing and reclaim the item?\n\n` +
+            "§c§lCancel this listing and reclaim the item?\n\n" +
                 `§f§lItem: §e${auctionTitle(a)}\n` +
                 `§f§lAmount: §e${a.amount}\n` +
                 `§f§lPrice: §e${formatCents(a.price)}`,
@@ -376,8 +388,10 @@ async function openAhSellEntry(player, priceRaw = "") {
         const parsed = parseUiMoneyToCents(priceRaw, false);
         if (!parsed.ok) {
             msg(player, `§c${parsed.error ?? "Invalid price."}`);
+
             return openAhSellHeld(player, selected, held);
         }
+
         return openQuickSellConfirm(player, selected, held, parsed.cents);
     }
 
@@ -408,6 +422,7 @@ async function openAhInventoryPicker(player, back) {
     const stack = inv.getItem(slot);
     if (!stack) {
         msg(player, "§cThat slot is empty now.");
+
         return openAhInventoryPicker(player, back);
     }
 
@@ -419,14 +434,17 @@ async function openAhSellHeld(player, slotIndex, sourceStack, back) {
 
     if (isShulkerBoxId(sourceStack.typeId)) {
         msg(player, "§cAuction House does not support shulker boxes because Bedrock hides their contents from scripts.");
+
         return openBack(player, back);
     }
 
     if (isPotionItem(sourceStack?.typeId) || isShulkerBoxId(sourceStack?.typeId))
         return msg(player, "§cPotions and shulker boxes cannot be safely copied for auction.");
+
     const template = stackToTemplate(sourceStack);
     if (!template) {
         msg(player, "§cCould not copy that item.");
+
         return openBack(player, back);
     }
 
@@ -438,6 +456,7 @@ async function openAhSellHeld(player, slotIndex, sourceStack, back) {
     const parsed = parseUiMoneyToCents(res.formValues?.[0], false);
     if (!parsed.ok) {
         msg(player, `§c${parsed.error ?? "Invalid price."}`);
+
         return openBack(player, back);
     }
 
@@ -447,6 +466,7 @@ async function openAhSellHeld(player, slotIndex, sourceStack, back) {
 async function openQuickSellConfirm(player, slotIndex, sourceStack, priceCents, back) {
     if (isPotionItem(sourceStack?.typeId) || isShulkerBoxId(sourceStack?.typeId))
         return msg(player, "§cPotions and shulker boxes cannot be safely copied for auction.");
+
     const template = stackToTemplate(sourceStack);
     if (!template) return msg(player, "§cCould not copy that item.");
 
@@ -460,7 +480,7 @@ async function openQuickSellConfirm(player, slotIndex, sourceStack, priceCents, 
                 `§f§lItem: §e${itemName}\n` +
                     `§f§lAmount: §e${amount}\n` +
                     `§f§lTotal price: §e${formatCents(priceCents)}\n\n` +
-                    `§c§lThis will remove the whole stack from your inventory.`,
+                    "§c§lThis will remove the whole stack from your inventory.",
             )
             .button("§8§lBack", "textures/ui/arrow_left")
             .button("§2§lList Item", getStackIcon(sourceStack));

@@ -6,7 +6,7 @@ import { openSettings } from "../modules/settings/navigation.js";
 export function registerMoneySettingsCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:moneysettings`,
+            name: "lilymoney:moneysettings",
             description: "Open money settings UI",
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,
@@ -27,6 +27,7 @@ export function registerMoneySettingsCommand(customCommandRegistry) {
                     if (src.isValid !== false) sendChat(src, "Settings could not be opened or saved.");
                 }),
             );
+
             return { status: CustomCommandStatus.Success };
         },
     );

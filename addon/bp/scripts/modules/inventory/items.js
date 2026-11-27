@@ -7,18 +7,22 @@ export function getInventoryContainer(player) {
 export function getMaxStack(itemId) {
     const itemType = ItemTypes.get(itemId);
     if (!itemType) return 64;
+
     const probe = new ItemStack(itemType, 1);
+
     return Math.max(1, probe.maxAmount ?? 64);
 }
 
 export function getCapacityForItem(container, itemId) {
     const maxStack = getMaxStack(itemId);
     let capacity = 0;
+
     for (let i = 0; i < container.size; i++) {
         const s = container.getItem(i);
         if (!s) capacity += maxStack;
         else if (s.typeId === itemId && s.amount < maxStack) capacity += maxStack - s.amount;
     }
+
     return capacity;
 }
 
@@ -58,10 +62,12 @@ export function addExactItems(container, itemId, amount) {
 
 export function countItems(container, itemId) {
     let count = 0;
+
     for (let i = 0; i < container.size; i++) {
         const s = container.getItem(i);
         if (s && s.typeId === itemId) count += s.amount;
     }
+
     return count;
 }
 
@@ -88,5 +94,6 @@ export function removeItems(container, itemId, amount) {
             }
         }
     }
+
     return amount - remaining;
 }

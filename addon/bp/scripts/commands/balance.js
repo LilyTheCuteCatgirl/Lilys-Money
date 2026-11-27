@@ -48,6 +48,7 @@ function handleBalance(origin, targetRaw) {
         const { dollarsObj, centsObj } = ensureMoneyObjectives();
         if (!dollarsObj || !centsObj) {
             reply(origin, "§cMoney objectives are missing and could not be created.");
+
             return;
         }
 
@@ -59,8 +60,8 @@ function handleBalance(origin, targetRaw) {
 }
 
 export function registerBalanceCommands(customCommandRegistry) {
-    const base = `lilymoney:balance`;
-    const alias = `lilymoney:bal`;
+    const base = "lilymoney:balance";
+    const alias = "lilymoney:bal";
 
     const def = {
         permissionLevel: CommandPermissionLevel.Any,

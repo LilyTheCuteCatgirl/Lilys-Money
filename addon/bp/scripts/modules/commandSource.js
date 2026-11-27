@@ -16,6 +16,7 @@ export function isAdmin(player) {
 
 export function isAdminOrCommandBlock(origin) {
     const src = getCommandSource(origin);
+
     return isCommandBlock(origin) || isAdmin(src);
 }
 

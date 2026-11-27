@@ -1,4 +1,5 @@
 export const ROOT = "Lily's Money - Settings";
+
 export const pages = {
     "Lily's Money - Settings": {
         body: "Personal settings affect you. Server settings affect everyone in this world.",

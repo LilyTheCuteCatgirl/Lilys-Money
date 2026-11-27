@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { packFixture } from "./packFixture.mjs";
+
 test("Shared item templates preserve the saved item template fields and canonical matching key", async (t) => {
     const { load } = await packFixture(t);
     const { stackToTemplate, templateToStack, templateKey } = await load("scripts/modules/items/templates.js");
@@ -26,6 +27,7 @@ test("known potion variants and unreadable stack metadata are rejected", async (
     const { load } = await packFixture(t);
     const { ItemStack } = await load("node_modules/@minecraft/server/index.js");
     const { stackToTemplate, templateToStack } = await load("scripts/modules/items/templates.js");
+
     for (const typeId of ["minecraft:potion", "minecraft:splash_potion", "minecraft:lingering_potion"]) {
         assert.equal(stackToTemplate(new ItemStack(typeId)), null);
         assert.equal(templateToStack({ typeId }), null);
@@ -53,8 +55,8 @@ test("capacity uses exact metadata and native stackability", async (t) => {
     const { ItemStack } = await load("node_modules/@minecraft/server/index.js");
     const { stackToTemplate } = await load("scripts/modules/items/templates.js");
     const { getCapacityForTemplate, stackMatchesTemplate } = await load("scripts/modules/inventory/templateInventory.js");
-    const a = new ItemStack("minecraft:stone", 62),
-        b = new ItemStack("minecraft:stone", 1);
+    const a = new ItemStack("minecraft:stone", 62);
+    const b = new ItemStack("minecraft:stone", 1);
     b.nameTag = "Private";
     const container = { size: 3, getItem: (i) => [a, b][i] };
     assert.equal(getCapacityForTemplate(container, stackToTemplate(a)), 66);

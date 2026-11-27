@@ -6,7 +6,7 @@ import { openJobRoot } from "../modules/jobs/ui.js";
 export function registerJobCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:job`,
+            name: "lilymoney:job",
             description: "Open job UI",
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,
@@ -17,6 +17,7 @@ export function registerJobCommand(customCommandRegistry) {
                 return { status: CustomCommandStatus.Failure, message: chatText("Only players can use /job.") };
             }
             system.run(() => openJobRoot(src).catch((e) => console.warn(`[Job] UI error: ${e?.stack ?? e}`)));
+
             return { status: CustomCommandStatus.Success };
         },
     );

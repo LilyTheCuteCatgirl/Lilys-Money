@@ -7,17 +7,21 @@ async function uiFixture(t) {
     const f = await commerceFixture(t);
     const ui = await f.load("node_modules/@minecraft/server-ui/index.js");
     const clean = (text) => text.replace(/§./g, "");
+
     for (const Type of [ui.ActionFormData, ui.ModalFormData]) {
         Type.prototype.title = function (text) {
             this.caption = clean(text);
+
             return this;
         };
         Type.prototype.body = function (text) {
             this.description = clean(text);
+
             return this;
         };
         Type.prototype.button = function (text, icon) {
             (this.buttons ??= []).push({ text: clean(text), icon });
+
             return this;
         };
         Type.prototype.show = function (player) {
@@ -34,13 +38,16 @@ async function uiFixture(t) {
             inspect?.(form);
             if (choice === undefined) return { canceled: true };
             if (Array.isArray(choice)) return { formValues: choice };
+
             const selection = form.buttons.findIndex((b) => b.text.split("\n")[0] === choice);
             assert.notEqual(selection, -1, `Missing ${choice} in ${title}`);
+
             return { selection };
         };
         await open();
         assert.equal(steps.length, 0);
     }
+
     return { ...f, walk };
 }
 

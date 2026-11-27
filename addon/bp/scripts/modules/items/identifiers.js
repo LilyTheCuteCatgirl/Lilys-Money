@@ -13,11 +13,13 @@ function normalizeLooseId(raw) {
         .trim()
         .toLowerCase();
     if (!s) return null;
+
     return s.includes(":") ? s : `minecraft:${s}`;
 }
 
 export function normalizeItemId(raw) {
     const id = normalizeLooseId(raw);
+
     return id && safeIsValidItemId(id) ? id : null;
 }
 
@@ -32,12 +34,15 @@ export function getItemType(id) {
 export function shortItemName(id) {
     const s = String(id ?? "");
     if (s.startsWith("minecraft:")) return s.slice("minecraft:".length);
+
     const i = s.indexOf(":");
+
     return i !== -1 ? s.slice(i + 1) : s;
 }
 
 export function niceIdName(id) {
     const s = shortItemName(id);
+
     return s
         .split("_")
         .map((p) => (p.length ? p[0].toUpperCase() + p.slice(1) : p))
@@ -60,6 +65,7 @@ export function romanLevel(n) {
 
 export function isShulkerBoxId(id) {
     const s = String(id ?? "").toLowerCase();
+
     return s === "minecraft:shulker_box" || s.endsWith("_shulker_box");
 }
 

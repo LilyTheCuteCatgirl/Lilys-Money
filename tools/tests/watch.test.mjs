@@ -10,6 +10,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function until(predicate, timeoutMs = 12000) {
     const start = Date.now();
+
     while (!predicate()) {
         if (Date.now() - start > timeoutMs) throw new Error("Timed out waiting for watch to sync");
         await wait(80);

@@ -1,6 +1,5 @@
 import { sendChat } from "../chat.js";
 import { serverOptions } from "../settings/server.js";
-
 import { ensureMoneyObjectives, getBalanceCents } from "../economy/balance.js";
 import { formatCents } from "../economy/formatting.js";
 import { formatItemLinePlayer, findItemInShop, shopItemTitle, getShopItemIcon, getCategoryIcon } from "./catalog.js";
@@ -14,6 +13,7 @@ import { openAdminMenu } from "./adminUi.js";
 
 function getMoneyStr(player) {
     const { dollarsObj, centsObj } = ensureMoneyObjectives();
+
     return formatCents(getBalanceCents(dollarsObj, centsObj, player));
 }
 
@@ -29,6 +29,7 @@ function buildShopItemDetailsBody(player, it) {
     if (!t) {
         lines.push(`§8Item: §f${niceIdName(it.id)}`);
         lines.push(`§8ID: §8${it.id}`);
+
         return lines.join("§r\n");
     }
 
@@ -126,11 +127,13 @@ export async function openShopEntry(player, itemQuery) {
 
     if (matches.length === 0) {
         sendChat(player, `§cItem not found in shop: §f${itemQuery}`);
+
         return openShopRoot(player);
     }
 
     if (matches.length === 1) {
         const m = matches[0];
+
         return openItemMenu(player, m.ci, m.ii, () => openShopRoot(player));
     }
 
@@ -176,6 +179,7 @@ async function openShopRoot(player) {
                 .button("§c§lClose", "textures/ui/cancel");
 
             await form.show(player);
+
             return;
         }
 
@@ -233,12 +237,14 @@ async function openCategoryMenu(player, catIndex, page = 0) {
 
     const res = await form.show(player);
     if (res.canceled) return;
+
     const pick = res.selection;
     if (Number.isInteger(pick) && pick >= 0 && pick < shown.length) {
         return openItemMenu(player, catIndex, start + pick, () => openCategoryMenu(player, catIndex, page));
     }
     if (previous && pick === shown.length) return openCategoryMenu(player, catIndex, page - 1);
     if (next && pick === shown.length + Number(previous)) return openCategoryMenu(player, catIndex, page + 1);
+
     return openShopRoot(player);
 }
 

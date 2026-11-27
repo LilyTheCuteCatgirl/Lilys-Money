@@ -1,4 +1,5 @@
 import { packFixture } from "./packFixture.mjs";
+
 export async function commerceFixture(t) {
     const fixture = await packFixture(t);
     const { world, load, properties } = fixture;
@@ -7,6 +8,7 @@ export async function commerceFixture(t) {
     properties.set(CONFIG.TRANSACTION_LOGGING_DP_KEY, false);
     function objective() {
         const scores = new Map();
+
         return {
             getParticipants: () => [...scores.keys()],
             getScore: (id) => scores.get(id),
@@ -14,8 +16,8 @@ export async function commerceFixture(t) {
             removeParticipant: (id) => scores.delete(id),
         };
     }
-    const dollars = objective(),
-        cents = objective();
+    const dollars = objective();
+    const cents = objective();
     world.scoreboard = {
         getObjectiveAtDisplaySlot: () => undefined,
         getObjective: (id) => (id === CONFIG.MONEY_DOLLAR_OBJECTIVE ? dollars : cents),
@@ -48,10 +50,12 @@ export async function commerceFixture(t) {
         });
         dollars.setScore(identity, Math.floor(balance / 100));
         cents.setScore(identity, balance % 100);
+
         return p;
     }
-    const seller = makePlayer(7, "Seller", 0),
-        buyer = makePlayer(8, "Buyer", 1000);
+    const seller = makePlayer(7, "Seller", 0);
+    const buyer = makePlayer(8, "Buyer", 1000);
     const balance = (p) => dollars.getScore(p.scoreboardIdentity) * 100 + cents.getScore(p.scoreboardIdentity);
+
     return { ...fixture, ItemStack, dollars, cents, seller, buyer, balance, online, CONFIG };
 }

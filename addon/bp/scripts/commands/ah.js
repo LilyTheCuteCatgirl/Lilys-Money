@@ -5,17 +5,17 @@ import { openAhEntry } from "../modules/auction/ui.js";
 
 export function registerAhCommand(customCommandRegistry) {
     try {
-        customCommandRegistry.registerEnum(`lilymoney:ah_action`, ["sell"]);
+        customCommandRegistry.registerEnum("lilymoney:ah_action", ["sell"]);
     } catch {}
 
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:ah`,
+            name: "lilymoney:ah",
             description: "Open Lily's auction house",
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,
             optionalParameters: [
-                { name: `lilymoney:ah_action`, type: CustomCommandParamType.Enum },
+                { name: "lilymoney:ah_action", type: CustomCommandParamType.Enum },
                 { name: "price", type: CustomCommandParamType.Float },
             ],
         },

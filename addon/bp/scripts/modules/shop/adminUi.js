@@ -19,7 +19,6 @@ import {
     findTemplateGlobal,
     shopItemTitle,
 } from "./catalog.js";
-
 import { parseEnchantmentsText, enchantmentsToText } from "../items/enchantments.js";
 import { getInventoryContainer } from "../inventory/items.js";
 import { getStackIcon } from "../ui/itemIcons.js";
@@ -51,6 +50,7 @@ function describeShopStack(stack) {
     }
 
     const extra = bits.length ? ` §8| ${bits.join(" §8| ")}` : "";
+
     return `§f${name} §8x${stack.amount}${extra}`;
 }
 
@@ -91,10 +91,12 @@ async function openClearShopConfirm(player) {
 
     if (!ok) {
         shopMessage(player, "§cFailed to clear shop (save error).");
+
         return openAdminMenu(player);
     }
 
     shopMessage(player, "§aShop cleared (now empty).");
+
     return openAdminMenu(player);
 }
 
@@ -114,10 +116,12 @@ async function openResetShopConfirm(player) {
 
     if (!ok) {
         shopMessage(player, "§cFailed to reset shop (save error).");
+
         return openAdminMenu(player);
     }
 
     shopMessage(player, "§aShop reset to defaults.");
+
     return openAdminMenu(player);
 }
 
@@ -135,6 +139,7 @@ async function openAddCategory(player) {
 
     if (!name) {
         shopMessage(player, "§cCategory name can't be empty.");
+
         return openAdminMenu(player);
     }
 
@@ -142,6 +147,7 @@ async function openAddCategory(player) {
 
     if (findCategoryIndex(shop, name) !== -1) {
         shopMessage(player, "§cThat category already exists.");
+
         return openAdminMenu(player);
     }
 
@@ -149,6 +155,7 @@ async function openAddCategory(player) {
     stageShop(shop);
 
     shopMessage(player, `§aCategory created: §f${name}§a. Now add your first item.`);
+
     return openAddItem(player, shop.categories.length - 1);
 }
 
@@ -173,12 +180,14 @@ async function openEditCategoryMeta(player, catIndex) {
 
     if (!name) {
         shopMessage(player, "§cCategory name can't be empty.");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
     const existing = findCategoryIndex(shop, name);
     if (existing !== -1 && existing !== catIndex) {
         shopMessage(player, "§cThat category already exists.");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
@@ -187,10 +196,12 @@ async function openEditCategoryMeta(player, catIndex) {
 
     if (!saveShop(shop)) {
         shopMessage(player, "§cFailed to save category.");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
     shopMessage(player, "§aCategory updated.");
+
     return openItemsInCategoryAdmin(player, catIndex);
 }
 
@@ -199,6 +210,7 @@ async function openManageItems(player) {
 
     if (shop.categories.length === 0) {
         shopMessage(player, "§eNo categories yet. Add one first.");
+
         return openAdminMenu(player);
     }
 
@@ -336,10 +348,12 @@ async function openAddItemById(player, catIndex) {
 
     if (!saveShop(shop)) {
         shopMessage(player, "§cFailed to save shop data (save error).");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
     shopMessage(player, `§aAdded §f${shopItemTitle(itemObj)}§a to §f${cat.name}§a.`);
+
     return openItemsInCategoryAdmin(player, catIndex);
 }
 
@@ -348,6 +362,7 @@ async function openSelectHotbarItem(player, catIndex) {
 
     if (!inv) {
         shopMessage(player, "§cNo inventory container.");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
@@ -372,6 +387,7 @@ async function openSelectHotbarItem(player, catIndex) {
 
     if (!picked) {
         shopMessage(player, "§cThat hotbar slot is empty.");
+
         return openSelectHotbarItem(player, catIndex);
     }
 
@@ -386,14 +402,17 @@ async function openAddExactItemDetails(player, catIndex, sourceStack) {
 
     if (isShulkerBoxId(sourceStack?.typeId)) {
         shopMessage(player, "§cExact shulker boxes are not supported because Bedrock hides their contents from scripts.");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
     if (isPotionItem(sourceStack?.typeId)) return shopMessage(player, "§cPotion effects cannot be preserved in a shop template.");
+
     const template = stackToTemplate(sourceStack);
 
     if (!template) {
         shopMessage(player, "§cCould not copy that item.");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
@@ -414,6 +433,7 @@ async function openAddExactItemDetails(player, catIndex, sourceStack) {
 
     if (!buyParsed.ok || !sellParsed.ok) {
         shopMessage(player, "§cInvalid price (max 2 decimals).");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
@@ -425,6 +445,7 @@ async function openAddExactItemDetails(player, catIndex, sourceStack) {
 
     if (exists) {
         shopMessage(player, "§cThat exact custom item is already in the shop.");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
@@ -439,10 +460,12 @@ async function openAddExactItemDetails(player, catIndex, sourceStack) {
 
     if (!saveShop(shop)) {
         shopMessage(player, "§cFailed to save custom item (save error). This item may have too much saved data.");
+
         return openItemsInCategoryAdmin(player, catIndex);
     }
 
     shopMessage(player, `§aAdded exact item: §f${itemName}§a.`);
+
     return openItemsInCategoryAdmin(player, catIndex);
 }
 
@@ -525,6 +548,7 @@ async function openItemEditModal(player, catIndex, itemIndex) {
 
         if (existing && !(existing.ci === catIndex && existing.ii === itemIndex)) {
             shopMessage(player, "§cAnother normal item with that id already exists in the shop.");
+
             return openItemAdminActions(player, catIndex, itemIndex);
         }
     } else {
@@ -532,6 +556,7 @@ async function openItemEditModal(player, catIndex, itemIndex) {
 
         if (existing) {
             shopMessage(player, "§cAnother custom item with the same data already exists in the shop.");
+
             return openItemAdminActions(player, catIndex, itemIndex);
         }
     }
@@ -553,10 +578,12 @@ async function openItemEditModal(player, catIndex, itemIndex) {
 
     if (!saveShop(shop)) {
         shopMessage(player, "§cFailed to save shop data (save error).");
+
         return openAdminMenu(player);
     }
 
     shopMessage(player, "§aItem updated.");
+
     return openManageItems(player);
 }
 
@@ -586,9 +613,11 @@ async function openRemoveItemConfirm(player, catIndex, itemIndex) {
 
     if (!saveShop(shop)) {
         shopMessage(player, "§cFailed to save shop data (save error).");
+
         return openAdminMenu(player);
     }
 
     shopMessage(player, "§aItem removed.");
+
     return openManageItems(player);
 }

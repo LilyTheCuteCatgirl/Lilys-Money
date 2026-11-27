@@ -69,16 +69,20 @@ const auctionStore = createDocumentStore("lilymoney:ah_v1", 1, {
     decode(data) {
         if (!Array.isArray(data?.auctions) || (data.soldMessages !== undefined && !Array.isArray(data.soldMessages)))
             throw new Error("Invalid auction database.");
+
         const clean = sanitizeAh(data);
         if (clean.auctions.length !== data.auctions.length || clean.soldMessages.length !== (data.soldMessages?.length ?? 0))
             throw new Error("Unreadable auction or notification.");
         if (!Number.isSafeInteger(clean.nextId) || !Number.isSafeInteger(clean.nextSoldMessageId))
             throw new Error("Invalid auction counters.");
+
         const messageIds = new Set(clean.soldMessages.map((m) => m.id));
         if (messageIds.size !== clean.soldMessages.length || messageIds.has(String(clean.nextSoldMessageId)))
             throw new Error("Conflicting sold-message IDs.");
+
         const ids = new Set(clean.auctions.map((a) => a.id));
         if (ids.size !== clean.auctions.length || ids.has(String(clean.nextId))) throw new Error("Conflicting auction IDs.");
+
         return clean;
     },
 });

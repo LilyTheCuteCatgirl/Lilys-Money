@@ -34,6 +34,7 @@ export function getScoreSafe(obj, identityOrPlayer) {
     if (!id) return 0;
     try {
         const v = obj.getScore(id);
+
         return typeof v === "number" ? v : 0;
     } catch {
         return 0;
@@ -43,6 +44,7 @@ export function getScoreSafe(obj, identityOrPlayer) {
 export function getBalanceCents(dollarsObj, centsObj, player) {
     const d = getScoreSafe(dollarsObj, player);
     const c = getScoreSafe(centsObj, player);
+
     return d * 100 + c;
 }
 
@@ -77,6 +79,7 @@ export function setBalanceFromTotalCents(dollarsObj, centsObj, player, totalCent
     }
     const after = written ? totalCents : readReceiptBalance(dollarsObj, centsObj, id);
     recordHudChange(player, before, after, written ? description : null, key);
+
     return written && before !== undefined ? after - before : undefined;
 }
 
@@ -98,12 +101,14 @@ export function getStartMoneyCents() {
         if (typeof v === "number" && Number.isFinite(v)) return Math.max(0, Math.floor(v));
         if (typeof v === "string" && v.length) return Math.max(0, Math.floor(Number(v)));
     } catch {}
+
     return 0;
 }
 
 export function setStartMoneyCents(cents) {
     const c = Math.max(0, Math.floor(Number(cents) || 0));
     world.setDynamicProperty(CONFIG.START_MONEY_CENTS_DP_KEY, c);
+
     return c;
 }
 
@@ -122,6 +127,7 @@ export function addZero(obj, player) {
     // Setting even a zero score creates the participant's entry.
     try {
         obj.setScore(id, cur);
+
         return true;
     } catch {
         return false;
@@ -139,5 +145,6 @@ export function initMoneyForAllOnlinePlayers() {
         addZero(dollarsObj, p);
         addZero(centsObj, p);
     }
+
     return true;
 }

@@ -6,6 +6,7 @@ export const DEFAULT_ITEM_ICON = "textures/ui/cancel";
 export function cleanTexturePath(raw, fallback = DEFAULT_ITEM_ICON) {
     const s = String(raw ?? "").trim();
     if (!s) return fallback;
+
     return s.replace(/\.png$/i, "");
 }
 
@@ -30,18 +31,22 @@ export function normalizeLooseId(raw) {
         .trim()
         .toLowerCase();
     if (!s) return null;
+
     return s.includes(":") ? s : `minecraft:${s}`;
 }
 
 export function normalizeItemId(raw) {
     const id = normalizeLooseId(raw);
+
     return id && safeIsValidItemId(id) ? id : null;
 }
 
 export function shortItemName(id) {
     const s = String(id ?? "");
     if (s.startsWith("minecraft:")) return s.slice("minecraft:".length);
+
     const i = s.indexOf(":");
+
     return i !== -1 ? s.slice(i + 1) : s;
 }
 
@@ -4702,6 +4707,7 @@ function buildTextureCandidates(short) {
 
     for (const suffix of ["_stairs", "_slab", "_wall", "_button", "_pressure_plate", "_fence_gate", "_fence"]) {
         if (!short.endsWith(suffix)) continue;
+
         const base = short.slice(0, -suffix.length);
         addCandidate(out, base);
         for (const texture of BASE_MATERIAL_TEXTURE_CANDIDATES[base] ?? []) addCandidate(out, texture);
@@ -4769,6 +4775,7 @@ function buildTextureCandidates(short) {
 
     addCandidate(out, DIRECT_NAME_RENAMES[short]);
     addCandidate(out, FLOWER_TEXTURE_CANDIDATES[short]);
+
     return out;
 }
 
@@ -4777,6 +4784,7 @@ function firstMappedPath(mapping, names) {
         const path = mapping[name];
         if (path) return path;
     }
+
     return null;
 }
 
@@ -4790,6 +4798,7 @@ function findItemTexture(short, candidates) {
 
 function findTerrainTexture(short, candidates) {
     const carried = [`${short}_carried`, ...candidates.filter((name) => name.endsWith("_carried"))];
+
     return (
         firstMappedPath(VANILLA_TERRAIN_ALIAS_PATHS, carried) ??
         VANILLA_TERRAIN_ALIAS_PATHS[short] ??
@@ -4831,6 +4840,7 @@ Object.freeze(ITEM_TEXTURE_OVERRIDES);
 export function guessTexturePathFromItemId(itemId) {
     const id = normalizeItemId(itemId);
     if (!id) return DEFAULT_ITEM_ICON;
+
     return ITEM_TEXTURE_OVERRIDES[id] ?? resolveVanillaTexturePath(id) ?? DEFAULT_ITEM_ICON;
 }
 
@@ -4841,6 +4851,7 @@ export function getItemIconFromId(itemId) {
 export function getItemIconFromShopItem(it) {
     const id = normalizeItemId(it?.template?.typeId ?? it?.id);
     if (!id) return DEFAULT_ITEM_ICON;
+
     return getItemIconFromId(id);
 }
 
@@ -4848,10 +4859,12 @@ export function getItemIconFromAuction(auctionOrTemplate) {
     const t = auctionOrTemplate?.template ?? auctionOrTemplate;
     const id = normalizeItemId(t?.typeId ?? t?.id);
     if (!id) return DEFAULT_ITEM_ICON;
+
     return getItemIconFromId(id);
 }
 
 export function getStackIcon(stack) {
     if (!stack) return "textures/ui/cancel";
+
     return getItemIconFromId(stack.typeId);
 }

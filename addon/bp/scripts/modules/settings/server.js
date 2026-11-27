@@ -1,5 +1,6 @@
 import { world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
+
 const key = "lilymoney:server_options";
 const initial = {
     pay: true,
@@ -29,6 +30,7 @@ const initial = {
 let cached;
 export function serverOptions() {
     if (!cached) cached = { ...initial, ...JSON.parse(world.getDynamicProperty(key) ?? "{}") };
+
     return cached;
 }
 export function saveServerOptions(changes) {

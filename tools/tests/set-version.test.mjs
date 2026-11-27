@@ -46,6 +46,7 @@ function makeFixture(t) {
     const run = (value) => spawnSync(process.execPath, [path.join(root, "tools/set-version.mjs"), value], { cwd: root, encoding: "utf8" });
     const read = (filename) => fs.readFileSync(path.join(root, filename), "utf8");
     const json = (filename) => JSON.parse(read(filename));
+
     return { root, run, read, json };
 }
 
@@ -97,6 +98,7 @@ test("invalid version or missing welcome label leaves every file unchanged", (t)
             "addon/bp/scripts/main.js",
             "addon/bp/scripts/commands/moneyhelp.js",
         ];
+
         return new Map(files.map((p) => [p, fs.readFileSync(path.join(root, p), "utf8")]));
     }
     for (const [p, data] of snapshot()) before.set(p, data);

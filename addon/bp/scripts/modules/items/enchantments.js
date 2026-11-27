@@ -56,6 +56,7 @@ export function parseEnchantmentsText(text) {
 
 export function enchantmentsToText(enchantments) {
     if (!Array.isArray(enchantments) || enchantments.length === 0) return "";
+
     return enchantments.map((e) => `${shortItemName(e.id)}:${e.level}`).join(", ");
 }
 

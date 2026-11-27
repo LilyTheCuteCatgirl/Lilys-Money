@@ -4,9 +4,7 @@ import { CONFIG } from "../config.js";
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
 import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
 import { isAdminOrCommandBlock, getCommandSource, reply } from "../modules/commandSource.js";
-
 import { logMoneyEvent } from "../modules/logging/moneylogging.js";
-
 import { playMoneySound } from "../modules/players/preferences.js";
 
 export function registerAddMoneyCommand(customCommandRegistry) {

@@ -21,6 +21,7 @@ function parseJson(relativePath, original) {
 function jsonText(value, original) {
     const newline = original.includes("\r\n") ? "\r\n" : "\n";
     const trailingNewline = /\r?\n$/.test(original) ? newline : "";
+
     return JSON.stringify(value, null, 2).replaceAll("\n", newline) + trailingNewline;
 }
 
@@ -29,6 +30,7 @@ function replaceExactlyOnce(text, pattern, replacement, description) {
     if (matches.length !== 1) {
         throw new Error(`Expected exactly one ${description}, found ${matches.length}. No files were changed.`);
     }
+
     return text.replace(pattern, replacement);
 }
 
@@ -36,6 +38,7 @@ function setVersion() {
     if (process.argv.length !== 3 || !versionPattern.test(version)) {
         throw new Error("Usage: npm run sv -- 3.4.1 (three nonnegative numbers separated by dots)");
     }
+
     const parts = version.split(".").map(Number);
     if (!parts.every(Number.isSafeInteger)) throw new Error("Version numbers must be safe integers.");
 

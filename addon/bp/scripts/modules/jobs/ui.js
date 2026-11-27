@@ -28,6 +28,7 @@ function getRewardRuleIcon(type, id) {
 
 export async function openJobRoot(player) {
     if (!serverOptions().jobs) return tell(player, "Jobs are disabled.");
+
     const jobs = loadJobs();
     const admin = isAdmin(player);
 
@@ -63,6 +64,7 @@ export async function openJobRoot(player) {
             if (!setJob(player, null)) return;
             tell(player, "§aYou left your job.");
         }
+
         return;
     }
 
@@ -95,6 +97,7 @@ async function openJobDetails(player, jobId) {
             if (!setJob(player, job.id)) return;
             tell(player, `§aYou are now a §f${job.name}§a.`);
         }
+
         return;
     }
 
@@ -118,6 +121,7 @@ async function openAdminJobsMenu(player) {
     if (res.selection === 1) return openPickJobToEdit(player);
     if (res.selection === 2) return openResetJobsConfirm(player);
     if (res.selection === 3) return openClearJobsConfirm(player);
+
     return openJobRoot(player);
 }
 
@@ -165,11 +169,13 @@ async function openAddJob(player) {
 
     if (!id || !/^[a-z0-9_\-]+$/.test(id)) {
         tell(player, "§cInvalid ID. Use letters/numbers/_/- only.");
+
         return openAdminJobsMenu(player);
     }
 
     if (!name) {
         tell(player, "§cName cannot be empty.");
+
         return openAdminJobsMenu(player);
     }
 
@@ -177,6 +183,7 @@ async function openAddJob(player) {
 
     if (jobs.jobs.some((j) => j.id === id)) {
         tell(player, "§cA job with that ID already exists.");
+
         return openAdminJobsMenu(player);
     }
 
@@ -192,10 +199,12 @@ async function openAddJob(player) {
 
     if (!saveJobsOrWarn(player, jobs)) {
         jobs.jobs.pop();
+
         return openAdminJobsMenu(player);
     }
 
     tell(player, "§aJob added.");
+
     return openAdminJobsMenu(player);
 }
 
@@ -246,6 +255,7 @@ async function openEditJob(player, jobId) {
     if (res.selection === 1) {
         job.enabled = !job.enabled;
         saveJobsOrWarn(player, jobs);
+
         return openEditJob(player, jobId);
     }
 
@@ -330,6 +340,7 @@ async function openEditJobMeta(player, jobId) {
 
     if (!name) {
         tell(player, "§cName cannot be empty.");
+
         return openEditJob(player, jobId);
     }
 
@@ -339,6 +350,7 @@ async function openEditJobMeta(player, jobId) {
     job.allowPlacedBreak = allowPlacedBreak;
 
     saveJobsOrWarn(player, jobs);
+
     return openEditJob(player, jobId);
 }
 
@@ -348,6 +360,7 @@ async function openEditRewards(player, jobId, type, idLabel) {
     if (!job) return openAdminJobsMenu(player);
 
     if (!job.rules[type]) job.rules[type] = {};
+
     const entries = Object.entries(job.rules[type]);
 
     const form = new ActionFormData()
@@ -386,6 +399,7 @@ async function openAddRule(player, jobId, type, idLabel) {
     const parsed = parseJobMoney(res.formValues?.[1]);
     if (!id || !parsed.ok || parsed.cents <= 0) {
         tell(player, "§cInvalid id or reward.");
+
         return openEditRewards(player, jobId, type, idLabel);
     }
 
@@ -398,6 +412,7 @@ async function openAddRule(player, jobId, type, idLabel) {
 
     saveJobsOrWarn(player, jobs);
     tell(player, "§aRule added.");
+
     return openEditRewards(player, jobId, type, idLabel);
 }
 
@@ -414,6 +429,7 @@ async function openRuleActions(player, jobId, type, idLabel, id) {
 
     if (res.selection === 0) return openEditRuleReward(player, jobId, type, idLabel, id);
     if (res.selection === 1) return openRemoveRuleConfirm(player, jobId, type, idLabel, id);
+
     return openEditRewards(player, jobId, type, idLabel);
 }
 
@@ -434,12 +450,14 @@ async function openEditRuleReward(player, jobId, type, idLabel, id) {
     const parsed = parseJobMoney(res.formValues?.[0]);
     if (!parsed.ok || parsed.cents <= 0) {
         tell(player, "§cInvalid reward.");
+
         return openEditRewards(player, jobId, type, idLabel);
     }
 
     job.rules[type][id] = parsed.cents;
     saveJobsOrWarn(player, jobs);
     tell(player, "§aReward updated.");
+
     return openEditRewards(player, jobId, type, idLabel);
 }
 
@@ -531,5 +549,6 @@ function parseJobMoney(text) {
     const s = String(text ?? "").trim();
     const num = Number(s.replace(",", "."));
     if (!Number.isFinite(num)) return { ok: false, error: "Invalid number." };
+
     return parseFloatToCents(num, false);
 }

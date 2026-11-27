@@ -1,8 +1,6 @@
 import { chatText } from "../modules/chat.js";
 import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Player, system } from "@minecraft/server";
-
 import { ActionFormData } from "@minecraft/server-ui";
-
 import { getCommandSource } from "../modules/commandSource.js";
 
 // Help pages use the 8crafter UI style.
@@ -327,6 +325,7 @@ function getCommandType(command) {
 
     if (type === "admin") return "admin";
     if (type === "mixed") return "mixed";
+
     return "player";
 }
 
@@ -335,23 +334,24 @@ function getCommandColor(command) {
 
     if (type === "admin") return "§c";
     if (type === "mixed") return "§e";
+
     return "§a";
 }
 
 export function registerMoneyHelpCommand(customCommandRegistry) {
     try {
-        customCommandRegistry.registerEnum(`lilymoney:moneyhelp_section`, ["quickstart", "commands", "credits"]);
+        customCommandRegistry.registerEnum("lilymoney:moneyhelp_section", ["quickstart", "commands", "credits"]);
     } catch {}
 
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:moneyhelp`,
+            name: "lilymoney:moneyhelp",
             description: "Open Lily's Money help UI",
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,
             optionalParameters: [
                 {
-                    name: `lilymoney:moneyhelp_section`,
+                    name: "lilymoney:moneyhelp_section",
                     type: CustomCommandParamType.Enum,
                 },
             ],
@@ -416,6 +416,7 @@ async function openQuickStartPage(player) {
     if (res.canceled) return openMoneyHelpMain(player);
 
     if (res.selection === 0) return openCommandsMenu(player);
+
     return openMoneyHelpMain(player);
 }
 

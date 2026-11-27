@@ -8,6 +8,7 @@ import { SHOP_CATEGORY_ICON_PRESETS } from "../defaults/shop.js";
 
 export function findCategoryIndex(shop, name) {
     const low = String(name ?? "").toLowerCase();
+
     return shop.categories.findIndex((c) => String(c.name ?? "").toLowerCase() === low);
 }
 
@@ -40,6 +41,7 @@ export function findTemplateGlobal(shop, key, ignore = null) {
 
 function basicTemplateForId(itemId) {
     const id = normalizeItemId(itemId);
+
     return id ? normalizeTemplate({ typeId: id }) : null;
 }
 
@@ -59,12 +61,14 @@ export function manualTemplateForItem(itemId, customName, enchantments, baseTemp
 
 export function getTemplateForShopItem(it) {
     if (it?.template) return normalizeTemplate(it.template);
+
     return basicTemplateForId(it?.id);
 }
 
 export function shopItemTitle(it) {
     const t = normalizeTemplate(it?.template);
     if (t?.nameTag) return t.nameTag;
+
     return niceIdName(it?.id);
 }
 
@@ -80,6 +84,7 @@ export function formatItemLineAdmin(it) {
     const buyTxt = it.allowBuy ? `Buy: ${formatCents(it.buy)}` : "Buy: disabled";
     const sellTxt = it.allowSell ? `Sell: ${formatCents(it.sell)}` : "Sell: disabled";
     const exact = it.template ? " | Custom/exact item" : "";
+
     return `${buyTxt} | ${sellTxt}${exact}`;
 }
 
@@ -87,6 +92,7 @@ export function formatItemLinePlayer(it) {
     const buyTxt = it.allowBuy ? `§2Buy: ${formatCents(it.buy)}` : "§8Buy: disabled";
     const sellTxt = it.allowSell ? `§cSell: ${formatCents(it.sell)}` : "§8Sell: disabled";
     const exact = it.template ? " §dCustom" : "";
+
     return `${buyTxt} §8| ${sellTxt}${exact}`;
 }
 
@@ -198,6 +204,7 @@ export function findItemInShop(shop, rawQuery) {
     }
 
     matches.sort((a, b) => b.score - a.score);
+
     return matches;
 }
 
@@ -213,6 +220,7 @@ export function getShopCategoryIconOptions() {
 
 export function getShopCategoryIconByPresetIndex(index) {
     const i = Math.floor(Number(index));
+
     return cleanTexturePath(SHOP_CATEGORY_ICON_PRESETS[i]?.texture, DEFAULT_CATEGORY_ICON);
 }
 

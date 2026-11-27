@@ -13,6 +13,7 @@ export const RP_FOLDER_NAME = "LilysMoney_RP_DEV";
 export function readManifest(packPath) {
     const manifestPath = path.join(packPath, "manifest.json");
     if (!fs.existsSync(manifestPath)) throw new Error(`Missing manifest: ${manifestPath}`);
+
     return JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 }
 
@@ -21,6 +22,7 @@ export function validateProject() {
     const rp = readManifest(RP);
     const scriptModule = bp.modules?.find((m) => m.type === "script");
     if (!scriptModule?.entry) throw new Error("BP manifest has no JavaScript entry point.");
+
     const entry = path.resolve(BP, scriptModule.entry);
     if (!entry.startsWith(BP + path.sep) || !fs.existsSync(entry)) {
         throw new Error(`BP entry does not exist: ${scriptModule.entry}`);
@@ -31,9 +33,11 @@ export function validateProject() {
     if (!rp.dependencies?.some((d) => d.uuid === bp.header?.uuid)) {
         throw new Error("Resource pack does not reference the behavior-pack UUID.");
     }
+
     const bpVersion = bp.header.version.join(".");
     const rpVersion = rp.header.version.join(".");
     if (bpVersion !== rpVersion) throw new Error("BP/RP versions differ.");
+
     return { version: bpVersion, entry: scriptModule.entry };
 }
 
@@ -43,6 +47,7 @@ export function minecraftRoot({ preview = false, override } = {}) {
     if (!process.env.APPDATA) {
         throw new Error("APPDATA is unavailable. On Windows, run this from a normal terminal; for testing, use --minecraft-path <path>.");
     }
+
     return path.join(
         process.env.APPDATA,
         preview ? "Minecraft Bedrock Preview" : "Minecraft Bedrock",
@@ -83,8 +88,10 @@ export function syncDevelopmentPacks(mcRoot) {
             `Minecraft com.mojang folder not found: ${mcRoot}\nLaunch Minecraft once, or pass --minecraft-path with the correct directory.`,
         );
     }
+
     const destinations = destinationPaths(mcRoot);
     replaceDevelopmentPack(BP, destinations.bp, "bp");
     replaceDevelopmentPack(RP, destinations.rp, "rp");
+
     return destinations;
 }

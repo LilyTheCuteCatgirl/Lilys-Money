@@ -22,6 +22,7 @@ export class ItemStack {
     clone() {
         const copy = new ItemStack(this.typeId, this.amount);
         Object.assign(copy, structuredClone({ ...this }));
+
         return copy;
     }
     getLore() {

@@ -3,7 +3,6 @@ import { configuredInterval, onWorldReady } from "./modules/settings/timing.js";
 import { serverOptions } from "./modules/settings/server.js";
 import { system, world } from "@minecraft/server";
 import "./modules/ui/8crafterUiAuto.js";
-
 import { CONFIG } from "./config.js";
 import {
     ensureMoneyObjectives,
@@ -15,7 +14,6 @@ import {
     setBalanceFromTotalCents,
 } from "./modules/economy/balance.js";
 import { clearLegacyMoneyDisplaySlots, tickMoneyDisplay } from "./modules/economy/display.js";
-
 import { rememberPlayerName, flushSavedPlayerNames } from "./modules/players/nameDatabase.js";
 import { registerBalanceCommands } from "./commands/balance.js";
 import { registerSetMoneyCommand } from "./commands/setmoney.js";
@@ -30,16 +28,17 @@ import { registerMoneySettingsCommand } from "./commands/moneysettings.js";
 import { registerMoneyHelpCommand } from "./commands/moneyhelp.js";
 import { registerJobCommand } from "./commands/job.js";
 import { registerAhCommand } from "./commands/ah.js";
-
 import { initializeMoneyLogging, logPlayerJoin } from "./modules/logging/moneylogging.js";
 
 function configTicks(key, fallback) {
     const n = Math.floor(Number(CONFIG[key] ?? fallback));
+
     return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 function configCount(key, fallback) {
     const n = Math.floor(Number(CONFIG[key] ?? fallback));
+
     return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
@@ -80,6 +79,7 @@ function giveStartMoneyIfNeeded(player) {
 
         if (start <= 0) {
             player.addTag(CONFIG.FIRST_JOIN_TAG);
+
             return;
         }
 
@@ -97,6 +97,7 @@ function giveStartMoneyIfNeeded(player) {
 
 world.afterEvents.playerSpawn.subscribe((ev) => {
     if (!ev.initialSpawn) return;
+
     const player = ev.player;
     rememberPlayerName(player);
 
@@ -166,6 +167,7 @@ const stopFallback = configuredInterval("retry", () => {
         try {
             stopFallback();
         } catch {}
+
         return;
     }
 

@@ -4,6 +4,7 @@ import { ItemStack } from "@minecraft/server";
 
 function isOldFakeEnchantLore(line) {
     const plain = stripColors(line).trim().toLowerCase();
+
     return plain.startsWith("enchant:");
 }
 
@@ -261,11 +262,13 @@ export function templateToStack(template, amount = 1) {
     const restored = stackToTemplate(stack);
     if (!restored) return null;
     if (t.lockMode === undefined && restored.lockMode === "none") restored.lockMode = undefined;
+
     return templateKey(restored) === templateKey(t) ? stack : null;
 }
 
 export function templateKey(template) {
     const t = normalizeTemplate(template);
+
     return t ? JSON.stringify(t) : "";
 }
 

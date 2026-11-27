@@ -36,8 +36,9 @@ test("negative totals use nonnegative cents and normalization preserves value", 
             return this.scores.get(id);
         },
     });
-    const dollars = objective(),
-        cents = objective();
+    const dollars = objective();
+    const cents = objective();
+
     for (const total of [-214748364700, -101, -1, 0, 99, 214748364799]) {
         setBalanceFromTotalCents(dollars, cents, player, total);
         assert.equal(getBalanceCents(dollars, cents, player), total);

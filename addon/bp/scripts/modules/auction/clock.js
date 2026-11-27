@@ -1,7 +1,7 @@
 import { world } from "@minecraft/server";
 import { CONFIG } from "../../config.js";
 
-const AH_CLOCK_DP_KEY = `lilymoney:ah_v1:clock_ticks`;
+const AH_CLOCK_DP_KEY = "lilymoney:ah_v1:clock_ticks";
 
 let AH_CLOCK_CACHE = null;
 
@@ -11,6 +11,7 @@ export function getAhNowTicks() {
     const raw = world.getDynamicProperty(AH_CLOCK_DP_KEY);
     const ticks = Number(raw ?? 0);
     if (!Number.isSafeInteger(ticks) || ticks < 0) throw new Error("Invalid auction clock.");
+
     return (AH_CLOCK_CACHE = ticks);
 }
 

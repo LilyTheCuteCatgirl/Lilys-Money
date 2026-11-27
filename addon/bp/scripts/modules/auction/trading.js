@@ -18,6 +18,7 @@ import { isShulkerBoxId } from "../items/identifiers.js";
 // An offline seller can still be paid through their existing scoreboard identity.
 function sellerTarget(auction, dollars, cents) {
     const matches = (participant) => String(participant.id) === auction.sellerIdentityId;
+
     return (
         dollars.getParticipants().find(matches) ??
         cents.getParticipants().find(matches) ??
@@ -28,19 +29,23 @@ function sellerTarget(auction, dollars, cents) {
 export function buyAuction(player, auctionId) {
     if (!serverOptions().auctions) {
         msg(player, "Auction trading is disabled.");
+
         return "back";
     }
+
     const ah = loadAh();
     const index = ah.auctions.findIndex((a) => a.id === String(auctionId));
     const a = index >= 0 ? ah.auctions[index] : null;
 
     if (!a || a.status !== "active" || getAhNowTicks() >= a.expiresAt) {
         msg(player, "§cThat auction is no longer active.");
+
         return "back";
     }
 
     if (sameSeller(player, a)) {
         msg(player, "§cYou cannot buy your own auction.");
+
         return "details";
     }
 
@@ -48,10 +53,12 @@ export function buyAuction(player, auctionId) {
     if (!inv) return msg(player, "§cNo inventory container.");
     if (retainedListing(a)) {
         msg(player, "§cThe saved listing lacks the data needed to restore this item. The listing has been kept.");
+
         return "details";
     }
     if (getCapacityForTemplate(inv, a.template) < a.amount) {
         msg(player, "§cYou do not have enough inventory space.");
+
         return "details";
     }
 
@@ -59,10 +66,12 @@ export function buyAuction(player, auctionId) {
     const bal = getBalanceCents(dollarsObj, centsObj, player);
     if (bal < a.price) {
         msg(player, `§cNot enough money. Need §e${formatCents(a.price)}§c but you have §e${formatCents(bal)}§c.`);
+
         return "details";
     }
 
-    let buyerBalanceAfter, sellerBalanceAfter;
+    let buyerBalanceAfter;
+    let sellerBalanceAfter;
     const ok = runTrade((onRollback) => {
         const seller = sellerTarget(a, dollarsObj, centsObj);
         if (!seller) throw new Error("Seller scoreboard identity is unavailable.");
@@ -75,6 +84,7 @@ export function buyAuction(player, auctionId) {
     });
     if (!ok) {
         msg(player, "§cPurchase failed. Check the Content Log for details.");
+
         return "details";
     }
     recordHudChange(player, buyerBalanceAfter + a.price, buyerBalanceAfter, `Auction: bought ${auctionTitle(a)}`, undefined, a.amount);
@@ -113,18 +123,22 @@ export function cancelAuction(player, auctionId) {
     if (!inv) return msg(player, "§cNo inventory container.");
     if (retainedListing(a)) {
         msg(player, "§cThe saved listing lacks the data needed to restore this item. The listing has been kept.");
+
         return "details";
     }
     if (getCapacityForTemplate(inv, a.template) < a.amount) {
         msg(player, "§cYou need inventory space before cancelling this auction.");
+
         return "details";
     }
 
     if (!returnListing(ah, index, inv)) {
         msg(player, "§cCould not return the listing. Check the Content Log for details.");
+
         return "details";
     }
     msg(player, "§aAuction cancelled and item returned.");
+
     return "mine";
 }
 
@@ -139,18 +153,22 @@ export function claimExpiredAuction(player, auctionId) {
     if (!inv) return msg(player, "§cNo inventory container.");
     if (retainedListing(a)) {
         msg(player, "§cThe saved listing lacks the data needed to restore this item. The listing has been kept.");
+
         return "details";
     }
     if (getCapacityForTemplate(inv, a.template) < a.amount) {
         msg(player, "§cYou need inventory space to claim this item.");
+
         return "details";
     }
 
     if (!returnListing(ah, index, inv)) {
         msg(player, "§cCould not return the listing. Check the Content Log for details.");
+
         return "details";
     }
     msg(player, "§aExpired auction item claimed.");
+
     return "mine";
 }
 
@@ -168,6 +186,7 @@ export function listAuctionFromSlot(player, slotIndex, template, amount, priceCe
     if (isPotionItem(template?.typeId) || isShulkerBoxId(template?.typeId))
         return msg(player, "§cThis item cannot be safely copied for auction.");
     if (!templateToStack(template, 1)) return msg(player, "§cThis item cannot be reconstructed with its saved properties.");
+
     const sellerId = getPlayerIdentityId(player);
     if (!sellerId) return msg(player, "§cYour scoreboard identity is not ready yet. Try again in a moment.");
 
@@ -183,6 +202,7 @@ export function listAuctionFromSlot(player, slotIndex, template, amount, priceCe
     const current = inv.getItem(slotIndex);
     if (!current || !stackMatchesTemplate(current, template) || current.amount < amount) {
         msg(player, "§cThat item changed before listing. Try again.");
+
         return "browse";
     }
 
@@ -209,14 +229,17 @@ export function listAuctionFromSlot(player, slotIndex, template, amount, priceCe
     });
     if (!ok) {
         msg(player, "§cListing failed. Check the Content Log for details.");
+
         return "browse";
     }
     msg(player, `§aListed §e${amount}§a x §f${auctionTitle(auction)}§a for §e${formatCents(priceCents)}§a.`);
+
     return "mine";
 }
 
 function returnListing(ah, index, inv) {
     const [listing] = ah.auctions.splice(index, 1);
+
     return runTrade((onRollback) => {
         addTemplateItems(inv, listing.template, listing.amount, onRollback);
         if (!saveAh(ah)) throw new Error("Auction save failed.");

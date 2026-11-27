@@ -11,6 +11,7 @@ export const AH_MAX_EXPIRED_PER_PLAYER = Math.max(1, Math.floor(Number(CONFIG.AH
 export function nextAuctionId(ah) {
     const n = Math.max(1, Math.floor(Number(ah.nextId ?? 1)));
     ah.nextId = n + 1;
+
     return String(n);
 }
 
@@ -24,12 +25,14 @@ export function getPlayerIdentityId(player) {
 
 export function sameSeller(player, auction) {
     const pid = getPlayerIdentityId(player);
+
     return pid && pid === String(auction?.sellerIdentityId ?? "");
 }
 
 export function getPlayerAuctions(ah, player) {
     const id = getPlayerIdentityId(player);
     if (!id) return [];
+
     return ah.auctions.filter((a) => String(a.sellerIdentityId) === id);
 }
 
@@ -56,6 +59,7 @@ function enforceExpiredCapForSeller(ah, sellerIdentityId) {
 
 export function processAhExpirations() {
     if (!serverOptions().auctions) return;
+
     const ah = loadAh();
     const now = getAhNowTicks();
     let changed = false;
@@ -103,10 +107,12 @@ export function searchAuctions(query, ah = loadAh()) {
     const matches = tokens.length
         ? active.filter((a) => {
               const text = buildSearchText(a);
+
               return tokens.every((token) => text.includes(token));
           })
         : active;
     const sort = serverOptions().sort;
+
     return matches.sort(
         (a, b) =>
             (sort === "Cheapest" ? a.price - b.price : sort === "Most Expensive" ? b.price - a.price : 0) || b.createdAt - a.createdAt,
@@ -115,6 +121,7 @@ export function searchAuctions(query, ah = loadAh()) {
 
 export function findAuctionById(id) {
     const ah = loadAh();
+
     return ah.auctions.find((a) => a.id === String(id)) ?? null;
 }
 
@@ -131,5 +138,6 @@ configuredInterval("expiry", (ticks) => {
 export function auctionTitle(a) {
     const t = normalizeTemplate(a?.template);
     if (!t) return "Unknown Item";
+
     return t.nameTag || niceIdName(t.typeId);
 }

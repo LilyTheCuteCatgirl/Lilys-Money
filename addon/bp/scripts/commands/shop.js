@@ -6,7 +6,7 @@ import { openShopEntry } from "../modules/shop/ui.js";
 export function registerShopCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:shop`,
+            name: "lilymoney:shop",
             description: "Open the shop UI",
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,

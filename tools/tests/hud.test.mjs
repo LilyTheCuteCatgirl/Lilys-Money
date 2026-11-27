@@ -28,17 +28,20 @@ test("the default HUD follows personal settings through respawn, reconnect and r
     const toggles = new Map();
     ModalFormData.prototype.toggle = function (label, options) {
         toggles.set(label, options.defaultValue);
+
         return this;
     };
     ModalFormData.prototype.dropdown = function (label, choices, options) {
         if (label === "HUD Position") assert.deepEqual(choices, ["Top right", "Top left", "Bottom right", "Bottom left"]);
         assert.ok(options.defaultValueIndex >= 0);
+
         return this;
     };
     async function save(enabled, compact = false, corner = 0) {
         const sequence = [0, 0, { formValues: [enabled, corner] }, 2, 3, { formValues: [Number(compact), 0, 0, 0] }, 5];
         buyer.nextForm = () => {
             const next = sequence.shift();
+
             return typeof next === "number" ? { selection: next } : next;
         };
         open({ sourceEntity: buyer });
@@ -150,8 +153,8 @@ test("existing worlds default the HUD on independently of actionbar; personal ov
 });
 
 test("the title itself carries the unencoded wallet and each visible earning", () => {
-    const state = newHudSession(),
-        frames = [];
+    const state = newHudSession();
+    const frames = [];
     const send = (title) => frames.push(title);
     observeBalance(state, 20, 0);
     updateHud(state, 0, send);
@@ -174,6 +177,7 @@ test("a reward stays legible through the full hold and leaves the next reward be
         updateHud(state, t, (v) => {
             title = v;
         });
+
         return displayLines(title)[1];
     };
     assert.equal(row(0), "§aJob reward §2§l+3.50");
@@ -202,8 +206,8 @@ test("rapid identical credits are counted once each, including credits and debit
 });
 
 test("failed sends retry, sessions stay isolated, and idle refresh keeps an unchanged balance alive", () => {
-    const a = newHudSession(),
-        b = newHudSession();
+    const a = newHudSession();
+    const b = newHudSession();
     observeBalance(a, -1, 0);
     observeBalance(b, 214748364799, 0);
     const result = [];
@@ -251,14 +255,15 @@ test("six live and cached notification boxes extract the correct UTF-8 rows bene
         assert.ok(ui.card_frame.controls[0]["backdrop@lily_money_hud.text_backdrop"]);
         const expression = base.bindings.find((b) => b.target_property_name === "#card_text").source_property_name;
         const padding = [...expression.matchAll(/ - '(~+)'/g)].map((m) => m[1]);
+
         for (const [index, text] of labels.entries()) {
             const name = baseName + "_" + (index + 1);
             const key = name + "@lily_money_hud." + baseName;
             const slot = ui.wallet.controls.find((control) => key in control)[key];
             assert.equal(slot.$slot_name, name);
             assert.deepEqual(ui.overlay.controls[1]["top_right@lily_money_hud.wallet"][slot.$position], [0, 16 + 13 * index]);
-            const start = Number(slot.$start.slice(2, -1)),
-                end = Number(slot.$end.slice(2, -1));
+            const start = Number(slot.$start.slice(2, -1));
+            const end = Number(slot.$end.slice(2, -1));
             const afterPhase = Number(slot.$after_phase.slice(2, -1));
             assert.equal(bytes.subarray(start, afterPhase).toString(), "A");
             const raw = bytes.subarray(afterPhase, end).toString();
@@ -334,6 +339,7 @@ test("a fading sheep reward brightens again in its original position while the c
         updateHud(state, t, (v) => {
             title = v;
         });
+
         return displayLines(title).slice(1);
     };
     assert.deepEqual(render(66), ["§aKilled Sheep §2§l+2.00", "§aKilled Cow §2§l+2.00"]);
@@ -364,8 +370,10 @@ test("six visible activities retain mining counts across repeats, queue promotio
         updateHud(state, t, (frame) => {
             title = frame;
         });
+
         return displayLines(title).slice(1);
     };
+
     for (const id of ["Stone", "Coal", "Iron", "Gold", "Copper"]) mine(id, 0);
     enqueueCard(state, 200, "Killed Sheep", 0, "job:kill:minecraft:sheep");
     mine("Diamond", 1);
@@ -390,6 +398,7 @@ test("repeated non-mining notices keep their count in the queue and overflow sum
         updateHud(state, t, (frame) => {
             title = frame;
         });
+
         return displayLines(title).slice(1);
     };
     assert.equal(lines(74)[0], "§aSale 6 §cx2 §2§l+1.25");
@@ -399,11 +408,13 @@ test("repeated non-mining notices keep their count in the queue and overflow sum
 
 test("live and cached wallet bindings remove the wire padding before the background measures the label", () => {
     const ui = JSON.parse(fs.readFileSync(new URL("../../addon/rp/ui/lily_money_hud.json", import.meta.url), "utf8"));
+
     for (const control of ui.wallet.controls.slice(1, 3)) {
         const label = Object.values(control)[0];
         assert.deepEqual(label.color, [1, 1, 1]);
         const expr = label.bindings.find((b) => b.target_property_name === "#text").source_property_name;
         const spaces = [...expr.matchAll(/ - '( +)'/g)].map((m) => m[1]);
+
         for (const value of ["$0.00", "$10.00", "-$200.04", "$2147483647.99", "-$2147483647.00"]) {
             assert.equal(
                 spaces.reduce((text, pad) => text.replace(pad, ""), value.padStart(16)),
@@ -419,6 +430,7 @@ test("each exit frame reverses from its current opacity and offset when the same
     const poses = new Map(
         ui.card_slot.controls.map((control) => {
             const pose = Object.values(control)[0];
+
             return [pose.$phase, { ...pose, $shift: ui.overlay.controls[1]["top_right@lily_money_hud.wallet"][pose.$shift] }];
         }),
     );
@@ -432,15 +444,18 @@ test("each exit frame reverses from its current opacity and offset when the same
             updateHud(state, tick, (title) => {
                 last = title;
             });
+
             return poses.get(last.split("\n")[1]?.[0]);
         };
         const entrance = [0, 1, 2, 3, 4].map(pose);
+
         for (let i = 1; i < entrance.length; i++) {
             assert.ok(entrance[i].$opacity > entrance[i - 1].$opacity);
             assert.ok(entrance[i].$shift[1] < entrance[i - 1].$shift[1]);
         }
         enqueueCard(state, 200, "Killed Cow", 25);
         const outward = [pose(64)];
+
         for (let i = 1; i <= step; i++) {
             outward.push(pose(64 + i));
             assert.equal(outward[i].$opacity, 1);
@@ -462,10 +477,12 @@ test("idle HUD samples one score pair per 20 ticks and resends its cached wallet
     const f = await commerceFixture(t);
     const { syncMoneyHud } = await f.load("scripts/modules/hud/manager.js");
     let reads = 0;
+
     for (const objective of [f.dollars, f.cents]) {
         const get = objective.getScore;
         objective.getScore = (identity) => {
             reads++;
+
             return get(identity);
         };
     }
@@ -473,6 +490,7 @@ test("idle HUD samples one score pair per 20 ticks and resends its cached wallet
     f.buyer.onScreenDisplay = { setTitle: (v) => titles.push(v) };
     syncMoneyHud(f.buyer);
     const pulse = [...f.intervals.values()].find((i) => i.ticks === 1).callback;
+
     for (let i = 0; i <= 600; i++) {
         f.system.currentTick = i;
         pulse();
@@ -489,6 +507,7 @@ test("stable cards skip title assembly until their exit begins", () => {
     Object.defineProperty(s.rows[0], "description", {
         get() {
             builds++;
+
             return "killed sheep";
         },
     });
@@ -544,11 +563,13 @@ test("admin defaults select the HUD and corner for unconfigured players, and per
     const controls = [];
     ModalFormData.prototype.toggle = function (name) {
         controls.push(name);
+
         return this;
     };
     ModalFormData.prototype.dropdown = function (name, values, options) {
         controls.push(name);
         if (name === "Default HUD Position") assert.equal(values[options.defaultValueIndex], "Top right");
+
         return this;
     };
     f.buyer.hasTag = (tag) => tag === f.CONFIG.ADMIN_TAG;
@@ -582,12 +603,13 @@ test("admin defaults select the HUD and corner for unconfigured players, and per
 
 test("each corner routes equal-width packets and stacks all six cards inward with an outward exit", () => {
     const ui = JSON.parse(fs.readFileSync(new URL("../../addon/rp/ui/lily_money_hud.json", import.meta.url), "utf8"));
+
     for (const [i, corner] of ["top_right", "top_left", "bottom_right", "bottom_left"].entries()) {
         const layout = ui.overlay.controls[i + 1][corner + "@lily_money_hud.wallet"];
         assert.equal(layout.$corner, corner);
         assert.equal(layout.$route, "~LM3:" + "BCDE"[i]);
-        const left = corner.endsWith("left"),
-            bottom = corner.startsWith("bottom");
+        const left = corner.endsWith("left");
+        const bottom = corner.startsWith("bottom");
         assert.deepEqual(layout.$inset, [left ? 3 : -3, bottom ? -3 : 3]);
         for (let row = 1; row <= 6; row++) assert.equal(layout["$row" + row][1], (bottom ? -1 : 1) * (16 + 13 * (row - 1)));
         assert.equal(layout.$shift_L[0], left ? "-100% - 8px" : "100% + 8px");
@@ -606,10 +628,10 @@ test("world sidebar reconciles joins, balances and leaves and only controls its 
         removeParticipant: (id) => scores.delete(id),
         getParticipants: () => [...scores.keys()],
     };
-    let displayed,
-        created = 0,
-        assigned = 0,
-        cleared = 0;
+    let displayed;
+    let created = 0;
+    let assigned = 0;
+    let cleared = 0;
     const board = f.world.scoreboard;
     const storage = board.getObjective;
     Object.assign(board, {
@@ -626,6 +648,7 @@ test("world sidebar reconciles joins, balances and leaves and only controls its 
         addObjective: (id) => {
             assert.equal(id, objective.id);
             created++;
+
             return objective;
         },
     });

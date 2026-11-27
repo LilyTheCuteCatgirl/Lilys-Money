@@ -3,8 +3,8 @@ import { CONFIG } from "../../config.js";
 import { DEFAULT_JOBS, JOB_ICON_PRESETS } from "../defaults/jobs.js";
 import { system, world } from "@minecraft/server";
 
-const JOBS_DP_KEY_V2 = `lilymoney:jobs_v2`;
-const JOBS_DP_KEY_V1 = `lilymoney:jobs_v1`; // Read older worlds from this key.
+const JOBS_DP_KEY_V2 = "lilymoney:jobs_v2";
+const JOBS_DP_KEY_V1 = "lilymoney:jobs_v1"; // Read older worlds from this key.
 
 export const DP_MAX = 32767;
 
@@ -23,7 +23,9 @@ export function deepClone(obj) {
 export function shortId(id) {
     const s = String(id ?? "");
     if (s.startsWith("minecraft:")) return s.slice("minecraft:".length);
+
     const i = s.indexOf(":");
+
     return i !== -1 ? s.slice(i + 1) : s;
 }
 
@@ -41,10 +43,12 @@ function toCentsMap(obj) {
         const id = String(k).trim();
         const n = Number(v);
         if (!id || !Number.isFinite(n)) continue;
+
         const c = Math.floor(n);
         if (c <= 0) continue;
         out[id] = c;
     }
+
     return out;
 }
 
@@ -82,11 +86,13 @@ function sanitizeJobs(obj, allowEmpty = false) {
     if (out.jobs.length === 0) {
         return allowEmpty ? out : deepClone(DEFAULT_JOBS);
     }
+
     return out;
 }
 
 function compileJobs(jobsObj) {
     const out = new Map();
+
     for (const j of jobsObj.jobs) {
         out.set(j.id, {
             id: j.id,
@@ -100,6 +106,7 @@ function compileJobs(jobsObj) {
             kill: new Map(Object.entries(j.rules.kill ?? {})),
         });
     }
+
     return out;
 }
 
@@ -107,6 +114,7 @@ function rebuildProtectedBreakIds(jobsObj) {
     const set = new Set();
     if (!jobsObj || !Array.isArray(jobsObj.jobs)) {
         _protectedBreakIds = set;
+
         return;
     }
 
@@ -114,6 +122,7 @@ function rebuildProtectedBreakIds(jobsObj) {
         if (j.allowPlacedBreak === true) continue;
 
         const br = j.rules?.break ?? {};
+
         for (const id of Object.keys(br)) set.add(id);
     }
 
@@ -142,10 +151,12 @@ function tryLoadJobsFromDP() {
             JOBS_CACHE = sanitizeJobs(parsed, true);
             COMPILED = compileJobs(JOBS_CACHE);
             rebuildProtectedBreakIds(JOBS_CACHE);
+
             return true;
         }
     } catch (error) {
         console.warn(`[Jobs] Cannot read v2 jobs: ${error}`);
+
         return false;
     }
 
@@ -158,6 +169,7 @@ function tryLoadJobsFromDP() {
             COMPILED = compileJobs(JOBS_CACHE);
             rebuildProtectedBreakIds(JOBS_CACHE);
             saveJobs(JOBS_CACHE); // Save the migrated jobs under the current key.
+
             return true;
         }
     } catch {}
@@ -177,6 +189,7 @@ function initJobsStorageWithRetry() {
 
         if (tryLoadJobsFromDP()) {
             clearJobsInitInterval();
+
             return;
         }
 
@@ -187,10 +200,12 @@ function initJobsStorageWithRetry() {
                 ids = world.getDynamicPropertyIds();
             } catch (error) {
                 console.warn(`[Jobs] Cannot verify empty storage: ${error}`);
+
                 return;
             }
             if (ids.includes(JOBS_DP_KEY_V2) || ids.includes(JOBS_DP_KEY_V1)) {
                 clearJobsInitInterval();
+
                 return;
             }
 
@@ -215,6 +230,7 @@ export function loadJobs() {
     JOBS_CACHE = deepClone(DEFAULT_JOBS);
     COMPILED = compileJobs(JOBS_CACHE);
     rebuildProtectedBreakIds(JOBS_CACHE);
+
     return JOBS_CACHE;
 }
 
@@ -241,6 +257,7 @@ function saveJobs(jobsObj) {
         JOBS_CACHE = clean;
         COMPILED = compileJobs(clean);
         rebuildProtectedBreakIds(clean);
+
         return true;
     } catch {
         return false;
@@ -250,6 +267,7 @@ function saveJobs(jobsObj) {
 export function saveJobsOrWarn(player, jobsObj) {
     const ok = saveJobs(jobsObj);
     if (!ok) tell(player, "§cFailed to save jobs (dynamic properties may be failing or data too large).");
+
     return ok;
 }
 
@@ -272,6 +290,7 @@ export function getJobIconOptions() {
 
 export function getJobIconByPresetIndex(index) {
     const i = Math.floor(Number(index));
+
     return cleanJobTexturePath(JOB_ICON_PRESETS[i]?.texture ?? DEFAULT_JOB_ICON);
 }
 
@@ -279,6 +298,7 @@ export function getJobIconPresetIndex(texture) {
     const clean = cleanJobTexturePath(texture);
 
     const index = JOB_ICON_PRESETS.findIndex((p) => cleanJobTexturePath(p.texture) === clean);
+
     return index >= 0 ? index : 0;
 }
 
@@ -289,6 +309,7 @@ system.run(() => {
 export function saveJobsAllowEmptyOrWarn(player, jobsObj) {
     const ok = saveJobsAllowEmpty(jobsObj);
     if (!ok) tell(player, "§cFailed to save jobs (dynamic properties may be failing or data too large).");
+
     return ok;
 }
 
@@ -306,6 +327,7 @@ function saveJobsAllowEmpty(jobsObj) {
         JOBS_CACHE = clean;
         COMPILED = compileJobs(clean);
         rebuildProtectedBreakIds(clean);
+
         return true;
     } catch {
         return false;
@@ -315,6 +337,7 @@ function saveJobsAllowEmpty(jobsObj) {
 export function getCompiledJob(id) {
     const jobs = loadJobs();
     COMPILED ??= compileJobs(jobs);
+
     return COMPILED.get(id);
 }
 

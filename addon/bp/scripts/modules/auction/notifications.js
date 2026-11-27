@@ -23,6 +23,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 function nextSoldMessageId(ah) {
     const n = Math.max(1, Math.floor(Number(ah.nextSoldMessageId ?? 1)));
     ah.nextSoldMessageId = n + 1;
+
     return String(n);
 }
 
@@ -99,6 +100,7 @@ export function deliverAhSoldMessagesForIdentity(identityId, seller = getOnlineP
 
     for (const sale of mine) notifyHudReceipt(seller, sale.price, `Auction: sold ${sale.itemName}`);
     playMoneySound(seller, "auction");
+
     return true;
 }
 

@@ -1,11 +1,8 @@
 // Gameplay callers supply event details. This module owns the logging switch, record format, checkpoints and shard recovery.
 
 import { Player, StructureSaveMode, system, world } from "@minecraft/server";
-
 import { CONFIG } from "../../config.js";
-
 import { ensureMoneyObjectives, getBalanceCents } from "../economy/balance.js";
-
 import { getAllSavedPlayerNameEntries } from "../players/nameDatabase.js";
 
 const WORLD_ID_DP_KEY = "lilymoney:world_id";
@@ -104,14 +101,17 @@ export function getMoneyLoggingEnabled() {
         const key = CONFIG.TRANSACTION_LOGGING_DP_KEY;
         if (!key) {
             dbWarn("TRANSACTION_LOGGING_DP_KEY is missing from CONFIG.");
+
             return false;
         }
 
         const saved = world.getDynamicProperty(key);
         loggingEnabledCache = saved === undefined ? true : saved === true;
+
         return loggingEnabledCache;
     } catch (e) {
         dbWarn(`Failed to load money logging setting: ${errorText(e)}`);
+
         return false;
     }
 }
@@ -132,9 +132,11 @@ function setSavedMoneyLoggingEnabled(enabled) {
 
         loggingEnabledCache = value;
         console.log(`[LilyMoney] Money logging setting saved: ${value ? "ON" : "OFF"}`);
+
         return true;
     } catch (e) {
         dbWarn(`FAILED to save money logging setting: ${errorText(e)}`);
+
         return false;
     }
 }
@@ -154,6 +156,7 @@ function errorText(error) {
     if (message && stack && !stack.includes(message)) {
         return `${message} | ${stack}`;
     }
+
     return stack || message || String(error);
 }
 
@@ -168,6 +171,7 @@ function dbWarn(message) {
 function safeInteger(value, fallback = null) {
     const n = Number(value);
     if (!Number.isSafeInteger(n)) return fallback;
+
     return n;
 }
 
@@ -290,9 +294,11 @@ export function getLilyMoneyWorldId() {
         }
 
         console.log(`[LilyMoney] Created world ID: ${worldId}`);
+
         return worldId;
     } catch (e) {
         console.warn(`[LilyMoney] Failed to get/create world ID: ${errorText(e)}`);
+
         return null;
     }
 }
@@ -309,6 +315,7 @@ function parseShardIndex(id) {
     if (!/^\d+$/.test(suffix)) return undefined;
 
     const value = Number(suffix);
+
     return Number.isSafeInteger(value) ? value : undefined;
 }
 
@@ -327,6 +334,7 @@ function savedShardInfos() {
 function nextAvailableShardIndex() {
     const shards = savedShardInfos();
     if (!shards.length) return 0;
+
     return shards[shards.length - 1].index + 1;
 }
 
@@ -335,6 +343,7 @@ function nextRecordIdForNewShard() {
     if (typeof last === "number" && Number.isSafeInteger(last)) {
         return last + 1;
     }
+
     return 0;
 }
 
@@ -454,6 +463,7 @@ function relocateStorageForSeal(entity, anchor) {
     });
 
     rememberActiveEntity(entity);
+
     return true;
 }
 
@@ -462,6 +472,7 @@ function normalizeDimensionIdForLookup(id) {
     if (raw === "minecraft:overworld") return "overworld";
     if (raw === "minecraft:nether") return "nether";
     if (raw === "minecraft:the_end") return "the_end";
+
     return raw.replace(/^minecraft:/, "");
 }
 
@@ -517,6 +528,7 @@ function saveDeadStorageQuarantine() {
 
     if (values.length === 0) {
         world.setDynamicProperty(W_DEAD_ENTITY_QUARANTINE, undefined);
+
         return;
     }
 
@@ -562,6 +574,7 @@ function releaseDeadStorageEntityId(entityId) {
         // Keep the ID quarantined if its removal cannot be persisted.
         quarantinedDeadStorageEntityIds.add(id);
         dbWarn(`Could not clear dead storage entity quarantine for ${id}: ${errorText(e)}`);
+
         return false;
     }
 
@@ -647,7 +660,7 @@ function recoverLoadedStorageState() {
                 }
 
                 dbWarn(
-                    `STALE ACTIVE CLEANUP: removing unsealed entity for already-sealed ` +
+                    "STALE ACTIVE CLEANUP: removing unsealed entity for already-sealed " +
                         `${id}; entity IDs end at ${lastId}, sealed history ends at ${lastSealedId}.`,
                 );
 
@@ -739,6 +752,7 @@ function recoverLoadedStorageState() {
     }
 
     forgetActiveEntity();
+
     return undefined;
 }
 
@@ -811,12 +825,14 @@ function ensureActiveShard(anchorPlayer = null) {
             "DATA SAFETY STOP: the world says an active money-log shard exists, " +
                 "but it is not loaded. Refusing to create a second active shard.",
         );
+
         return undefined;
     }
 
     const player = anchorPlayer instanceof Player ? anchorPlayer : world.getAllPlayers()[0];
 
     if (!(player instanceof Player)) return undefined;
+
     return createActiveShard(player);
 }
 
@@ -859,6 +875,7 @@ function readPages(entity) {
     }
 
     const pages = [];
+
     for (let i = 0; i < pageCount; i++) {
         const value = entity.getDynamicProperty(pageKey(i));
         if (typeof value !== "string") {
@@ -866,6 +883,7 @@ function readPages(entity) {
         }
         pages.push(value);
     }
+
     return pages;
 }
 
@@ -1146,7 +1164,7 @@ function loadEmergencyDeathSnapshot() {
     const checksum = fnv1a32Strings(pages);
 
     if (checksum !== meta.checksum) {
-        throw new Error(`Emergency death snapshot checksum mismatch: ` + `expected ${meta.checksum}, got ${checksum}.`);
+        throw new Error("Emergency death snapshot checksum mismatch: " + `expected ${meta.checksum}, got ${checksum}.`);
     }
 
     // Restore the property list expected by the shard recovery code.
@@ -1208,6 +1226,7 @@ function cleanStaleEmergencySnapshotIfSafe() {
         if (world.getDynamicProperty(W_ACTIVE_OPEN) !== true) {
             clearEmergencyDeathSnapshot();
             dbInfo("Removed stale emergency death snapshot because no active shard is open.");
+
             return;
         }
 
@@ -1268,12 +1287,14 @@ function captureDeadActiveShard(deadEntity) {
     ];
 
     const properties = [];
+
     for (const key of metadataKeys) {
         const value = deadEntity.getDynamicProperty(key);
         if (value !== undefined) properties.push([key, value]);
     }
 
     const pages = [];
+
     for (let i = 0; i < pageCount; i++) {
         const key = pageKey(i);
         const value = deadEntity.getDynamicProperty(key);
@@ -1395,7 +1416,7 @@ function restoreDeadActiveShard(snapshot, onSuccess = null) {
         if (existing.length > 0) {
             throw new Error(
                 `Refusing death recovery because ${existing.length} ` +
-                    `different active money storage entity/entities are already loaded.`,
+                    "different active money storage entity/entities are already loaded.",
             );
         }
 
@@ -1499,6 +1520,7 @@ function restoreDeadActiveShard(snapshot, onSuccess = null) {
         deathRecoveryInProgress = false;
         safetyBlocked = true;
         dbWarn(`DEATH RECOVERY FAIL: ${errorText(e)}. ` + "Persistent writes are safety-blocked; logging history will not silently fork.");
+
         return "failed";
     }
 }
@@ -2082,6 +2104,7 @@ function queuePersistentJobReward(payload, options = {}) {
 
     if (!entity) {
         dbWarn("Could not write JOB_REWARD: no safe active shard is available.");
+
         return false;
     }
 
@@ -2226,6 +2249,7 @@ function normalizeMoneyEvent(type, data) {
         case MONEY_LOG_EVENT.PAY: {
             const actor = actorInfo(data?.actor ?? data?.source);
             const target = actorInfo(data?.target);
+
             return [
                 actor.identityId,
                 actor.name,
@@ -2240,6 +2264,7 @@ function normalizeMoneyEvent(type, data) {
         case MONEY_LOG_EVENT.SHOP_BUY:
         case MONEY_LOG_EVENT.SHOP_SELL: {
             const player = actorInfo(data?.player ?? data?.actor);
+
             return [
                 player.identityId,
                 player.name,
@@ -2393,6 +2418,7 @@ export function logBalanceCheckpoint(player, reason = "manual") {
         });
     } catch (e) {
         dbWarn(`BALANCE_CHECKPOINT failed: ${errorText(e)}`);
+
         return false;
     }
 }
@@ -2406,6 +2432,7 @@ export function logFullBalanceCheckpoint(reason = "manual", anchorPlayer = null)
 
         if (!(anchor instanceof Player)) {
             bootCheckpointPending = true;
+
             return false;
         }
 
@@ -2415,9 +2442,11 @@ export function logFullBalanceCheckpoint(reason = "manual", anchorPlayer = null)
         const ok = appendPersistentRecord(MONEY_LOG_EVENT.FULL_BALANCE_CHECKPOINT, payload, { anchorPlayer: anchor });
 
         if (ok) bootCheckpointPending = false;
+
         return ok;
     } catch (e) {
         dbWarn(`FULL_BALANCE_CHECKPOINT failed: ${errorText(e)}`);
+
         return false;
     }
 }
@@ -2450,6 +2479,7 @@ try {
                     `DATA SAFETY STOP: money storage entity for shard ${deadShardIndex} died, ` +
                         `but world metadata expected active shard ${expectedShardIndex}.`,
                 );
+
                 return;
             }
 
@@ -2457,6 +2487,7 @@ try {
                 forgetActiveEntity();
                 world.setDynamicProperty(W_ACTIVE_OPEN, false);
                 world.setDynamicProperty(W_ACTIVE_SHARD_INDEX, undefined);
+
                 return;
             }
 
@@ -2479,6 +2510,7 @@ try {
                 forgetActiveEntity();
 
                 dbWarn("DATA SAFETY STOP: a second active money storage entity died while death recovery was already in progress.");
+
                 return;
             }
 
@@ -2488,6 +2520,7 @@ try {
 
             if (!snapshot) {
                 deathRecoveryInProgress = false;
+
                 return;
             }
 
@@ -2504,7 +2537,7 @@ try {
                 safetyBlocked = true;
 
                 dbWarn(
-                    `DEATH RECOVERY SAFETY STOP: captured the dead shard, ` +
+                    "DEATH RECOVERY SAFETY STOP: captured the dead shard, " +
                         `but could not persist its emergency backup: ${errorText(e)}.`,
                 );
 
@@ -2577,6 +2610,7 @@ function queuePlayerJoinSnapshot(snapshot) {
 function flushPendingPlayerJoins(anchorPlayer = null) {
     if (!getMoneyLoggingEnabled()) {
         pendingJoins.length = 0;
+
         return true;
     }
     if (safetyBlocked || startupRecoveryInProgress || deathRecoveryInProgress || pendingJoins.length === 0) {
@@ -2602,6 +2636,7 @@ function flushPendingPlayerJoins(anchorPlayer = null) {
     if (queuedCount > 0) {
         dbInfo(`Flushed ${queuedCount} queued PLAYER_JOIN record(s) after database recovery.`);
     }
+
     return true;
 }
 
@@ -2624,6 +2659,7 @@ export function logPlayerJoin(player) {
         // Capture the player's balance and identity at join time, even if recovery delays the write.
         if (startupRecoveryInProgress || deathRecoveryInProgress) {
             queuePlayerJoinSnapshot(snapshot);
+
             return true;
         }
 
@@ -2636,6 +2672,7 @@ export function logPlayerJoin(player) {
                     startupRecoveryInProgress = true;
                     retryStartupActiveShard(player, 0);
                 }
+
                 return true;
             }
         }
@@ -2645,8 +2682,10 @@ export function logPlayerJoin(player) {
             if (!checkpointOk) {
                 if (!safetyBlocked) {
                     queuePlayerJoinSnapshot(snapshot);
+
                     return true;
                 }
+
                 return false;
             }
         }
@@ -2658,12 +2697,14 @@ export function logPlayerJoin(player) {
 
         if (!ok && !safetyBlocked) {
             queuePlayerJoinSnapshot(snapshot);
+
             return true;
         }
 
         return ok;
     } catch (e) {
         dbWarn(`PLAYER_JOIN failed: ${errorText(e)}`);
+
         return false;
     }
 }
@@ -2713,6 +2754,7 @@ try {
     world.afterEvents.playerLeave.subscribe((event) => {
         if (!getMoneyLoggingEnabled()) {
             pendingLeaves.delete(String(event.playerId ?? ""));
+
             return;
         }
 
@@ -2765,12 +2807,14 @@ export function setMoneyLoggingEnabled(enabled, changedBy = null) {
         // Record the closing boundary while logging is still enabled.
         if (!(anchor instanceof Player)) {
             dbWarn("Cannot safely disable money logging without a player anchor.");
+
             return false;
         }
 
         const checkpointOk = logFullBalanceCheckpoint("logging_disabled", anchor);
         if (!checkpointOk) {
             dbWarn("Logging was NOT disabled because the final full checkpoint failed.");
+
             return false;
         }
 
@@ -2783,6 +2827,7 @@ export function setMoneyLoggingEnabled(enabled, changedBy = null) {
 
         if (!markerOk) {
             dbWarn("Logging was NOT disabled because the LOGGING_DISABLED marker failed.");
+
             return false;
         }
 
@@ -2792,12 +2837,14 @@ export function setMoneyLoggingEnabled(enabled, changedBy = null) {
                 sealActiveShard(entity, false, anchor);
             } catch (e) {
                 dbWarn(`Logging was NOT disabled because final shard sealing failed: ${errorText(e)}`);
+
                 return false;
             }
         }
 
         if (!setSavedMoneyLoggingEnabled(false)) {
             dbWarn("Failed to persist the OFF setting after sealing the database.");
+
             return false;
         }
 
@@ -2840,6 +2887,7 @@ export function setMoneyLoggingEnabled(enabled, changedBy = null) {
         try {
             setSavedMoneyLoggingEnabled(false);
         } catch {}
+
         return false;
     }
 }
@@ -2894,17 +2942,20 @@ function finishStartupMoneyLogging(anchor) {
     const entity = ensureActiveShard(anchor);
     if (!entity) {
         bootCheckpointPending = true;
+
         return false;
     }
 
     logFullBalanceCheckpoint("world_load", anchor);
     flushPendingPlayerJoins(anchor);
+
     return true;
 }
 
 function retryStartupActiveShard(anchor, attempt = 0) {
     if (!getMoneyLoggingEnabled()) {
         startupRecoveryInProgress = false;
+
         return;
     }
 
@@ -2918,12 +2969,14 @@ function retryStartupActiveShard(anchor, attempt = 0) {
         logFullBalanceCheckpoint("world_load", anchor);
 
         flushPendingPlayerJoins(anchor);
+
         return;
     }
 
     if (world.getDynamicProperty(W_ACTIVE_OPEN) !== true) {
         startupRecoveryInProgress = false;
         finishStartupMoneyLogging(anchor);
+
         return;
     }
 
@@ -2956,8 +3009,8 @@ function retryStartupActiveShard(anchor, attempt = 0) {
 
             dbWarn(
                 `Active shard ${snapshot.shardIndex} did not become queryable after startup retries, ` +
-                    `but a valid persisted death-recovery snapshot exists. ` +
-                    `Attempting automatic reconstruction.`,
+                    "but a valid persisted death-recovery snapshot exists. " +
+                    "Attempting automatic reconstruction.",
             );
 
             startupRecoveryInProgress = false;
@@ -2990,9 +3043,9 @@ function retryStartupActiveShard(anchor, attempt = 0) {
         bootCheckpointPending = true;
 
         dbWarn(
-            `DATA SAFETY STOP: active shard is missing and its emergency ` +
+            "DATA SAFETY STOP: active shard is missing and its emergency " +
                 `death snapshot could not be validated: ${errorText(e)}. ` +
-                `No new history will be written.`,
+                "No new history will be written.",
         );
 
         return;
@@ -3023,7 +3076,7 @@ export function initializeMoneyLogging() {
         safetyBlocked = true;
         bootCheckpointPending = true;
 
-        dbWarn(`DATA SAFETY STOP: could not initialize dead-entity quarantine from ` + `the emergency recovery snapshot: ${errorText(e)}.`);
+        dbWarn("DATA SAFETY STOP: could not initialize dead-entity quarantine from " + `the emergency recovery snapshot: ${errorText(e)}.`);
 
         return false;
     }
@@ -3031,12 +3084,14 @@ export function initializeMoneyLogging() {
     const anchor = world.getAllPlayers()[0];
     if (!(anchor instanceof Player)) {
         bootCheckpointPending = true;
+
         return false;
     }
 
     if (world.getDynamicProperty(W_ACTIVE_OPEN) === true) {
         startupRecoveryInProgress = true;
         retryStartupActiveShard(anchor, 0);
+
         return true;
     }
 

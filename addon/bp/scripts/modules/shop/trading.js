@@ -1,6 +1,5 @@
 import { serverOptions } from "../settings/server.js";
 import { recordHudChange } from "../hud/manager.js";
-
 import { normalizeItemId } from "../items/identifiers.js";
 import { stackMatchesTemplate, takeFromSlot, addTemplateItems, getCapacityForTemplate } from "../inventory/templateInventory.js";
 import { getTemplateForShopItem, shopMessage, shopItemTitle, getShopItemIcon } from "./catalog.js";
@@ -46,9 +45,11 @@ function countShopItems(container, it) {
 
 function removeShopItems(container, it, amount, onRollback) {
     let remaining = amount;
+
     for (let i = 0; i < container.size && remaining; i++) {
         const stack = container.getItem(i);
         if (!stackMatchesShopItem(stack, it)) continue;
+
         const count = Math.min(stack.amount, remaining);
         takeFromSlot(container, i, count, onRollback);
         remaining -= count;
@@ -58,6 +59,7 @@ function removeShopItems(container, it, amount, onRollback) {
 
 function offerAvailable(it, side) {
     const allowed = side === "buy" ? "allowBuy" : "allowSell";
+
     return loadShop().categories.some((category) =>
         category.items.some(
             (entry) =>
@@ -75,6 +77,7 @@ async function askQuantity(player, title, min, max, defaultAmount = 1) {
 
     if (!Number.isFinite(maxN) || maxN < minN) {
         shopMessage(player, "§cNo valid amount is available.");
+
         return null;
     }
 
@@ -92,6 +95,7 @@ async function askQuantity(player, title, min, max, defaultAmount = 1) {
 
     if (!/^\d+$/.test(raw)) {
         shopMessage(player, `§cInvalid amount. Enter a whole number between ${minN}-${maxN}.`);
+
         return null;
     }
 
@@ -99,6 +103,7 @@ async function askQuantity(player, title, min, max, defaultAmount = 1) {
 
     if (!Number.isSafeInteger(n) || n < minN || n > maxN) {
         shopMessage(player, `§cInvalid amount. Enter a whole number between ${minN}-${maxN}.`);
+
         return null;
     }
 
@@ -131,6 +136,7 @@ async function confirmShopBuy(player, it, qty, totalCost, balanceBefore) {
         .button("§2§lBuy", getShopItemIcon(it));
 
     const res = await form.show(player);
+
     return !res.canceled && res.selection === 1;
 }
 
@@ -150,6 +156,7 @@ async function confirmShopSell(player, it, qty, totalPay, balanceBefore) {
         .button("§b§lSell", getShopItemIcon(it));
 
     const res = await form.show(player);
+
     return !res.canceled && res.selection === 1;
 }
 

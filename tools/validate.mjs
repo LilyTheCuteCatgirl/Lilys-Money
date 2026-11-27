@@ -6,6 +6,7 @@ import { BP, validateProject } from "./project.mjs";
 function listScripts(dir) {
     return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
         const file = path.join(dir, entry.name);
+
         return entry.isDirectory() ? listScripts(file) : entry.isFile() && file.endsWith(".js") ? [file] : [];
     });
 }

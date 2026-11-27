@@ -18,6 +18,7 @@ export function syncMoneySidebar(players) {
 
     if (!serverOptions().sidebar) {
         if (displayed?.id === id) board.clearObjectiveAtDisplaySlot(slot);
+
         return;
     }
 
@@ -49,6 +50,7 @@ export function syncMoneySidebar(players) {
 
 export function tickMoneyDisplay() {
     const players = world.getAllPlayers();
+
     for (const player of players) syncMoneyHud(player);
     syncMoneySidebar(players);
 }

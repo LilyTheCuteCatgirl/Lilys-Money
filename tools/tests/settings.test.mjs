@@ -91,6 +91,7 @@ test("localized amounts keep the 28-byte wallet header for every route", () => {
 });
 
 import { commerceFixture } from "./commerceFixture.mjs";
+
 test("players and admins can walk every menu and cancel every editor back to its parent", async (t) => {
     const f = await commerceFixture(t);
     const ui = await f.load("node_modules/@minecraft/server-ui/index.js");
@@ -99,6 +100,7 @@ test("players and admins can walk every menu and cancel every editor back to its
     for (const Type of [ui.ActionFormData, ui.ModalFormData]) {
         Type.prototype.title = function (value) {
             this.caption = value;
+
             return this;
         };
         Type.prototype.show = function () {
@@ -106,6 +108,7 @@ test("players and admins can walk every menu and cancel every editor back to its
         };
         Type.prototype.button = function (label, icon) {
             (this.buttons ??= []).push([label.replace(/§./g, ""), icon]);
+
             return this;
         };
         for (const method of ["toggle", "dropdown", "textField"])
@@ -127,9 +130,11 @@ test("players and admins can walk every menu and cancel every editor back to its
         assert.equal(form.caption.replace(/§./g, ""), titles[name] ?? name);
         if (!buttons) {
             assert.ok(form instanceof ui.ModalFormData);
+
             return { canceled: true };
         }
         assert.deepEqual(form.buttons, buttons);
+
         return { selection: index };
     }
     function buttons(page) {
@@ -137,14 +142,18 @@ test("players and admins can walk every menu and cancel every editor back to its
             page === ROOT || (!admin && page === "Personal Settings")
                 ? ["Close", "textures/ui/cancel"]
                 : ["Back", "textures/ui/arrow_left"];
+
         return [...pages[page].links.filter(([name]) => admin || name !== "Server Settings"), end];
     }
     function walk(page) {
         if (!pages[page]) {
             steps.push([page]);
+
             return;
         }
+
         const links = buttons(page);
+
         for (const [index, [name]] of links.slice(0, -1).entries()) {
             steps.push([page, index, links]);
             walk(name);
@@ -170,6 +179,7 @@ test("admin forms discard invalid, stale, cancelled and deauthorized submissions
     let admin = true;
     f.buyer.hasTag = () => admin;
     const show = () => showEditor(f.buyer, "General Economy", true, editorFor("General Economy", f.buyer));
+
     for (const input of [{ canceled: true }, { formValues: ["5.005", false, true] }, { formValues: ["5.00", "invalid", true] }]) {
         f.buyer.nextForm = () => input;
         await show();
@@ -178,6 +188,7 @@ test("admin forms discard invalid, stale, cancelled and deauthorized submissions
     }
     f.buyer.nextForm = () => {
         setStartMoneyCents(700);
+
         return { formValues: ["5.00", false, true] };
     };
     await show();
@@ -185,6 +196,7 @@ test("admin forms discard invalid, stale, cancelled and deauthorized submissions
     assert.equal(serverOptions().pay, true);
     f.buyer.nextForm = () => {
         admin = false;
+
         return { formValues: ["5.00", false, true] };
     };
     await show();
@@ -279,10 +291,12 @@ test("revoked admin access routes stale server selections to Personal Settings a
     const seen = [];
     ActionFormData.prototype.title = function (text) {
         this.caption = text;
+
         return this;
     };
     ActionFormData.prototype.show = function (player) {
         seen.push(this.caption.replace(/§./g, ""));
+
         return player.nextForm();
     };
     await f.load("scripts/modules/ui/8crafterUiAuto.js");
@@ -292,8 +306,10 @@ test("revoked admin access routes stale server selections to Personal Settings a
     f.buyer.nextForm = () => {
         if (admin) {
             admin = false;
+
             return { selection: 1 };
         }
+
         return { canceled: true };
     };
     await openSettings(f.buyer);

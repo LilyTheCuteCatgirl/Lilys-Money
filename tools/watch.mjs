@@ -5,11 +5,13 @@ import { ADDON, BP, RP, minecraftRoot, syncDevelopmentPacks } from "./project.mj
 
 function parseArgs(argv) {
     const options = { preview: false };
+
     for (let i = 0; i < argv.length; i++) {
         if (argv[i] === "--preview") options.preview = true;
         else if (argv[i] === "--minecraft-path" && argv[i + 1]) options.override = argv[++i];
         else throw new Error(`Unknown or incomplete option: ${argv[i]}`);
     }
+
     return options;
 }
 
@@ -26,6 +28,7 @@ function fileFingerprint() {
     }
     visit(BP);
     visit(RP);
+
     return hash.digest("hex");
 }
 
@@ -37,14 +40,17 @@ try {
     if (!fs.existsSync(mcRoot) || !fs.statSync(mcRoot).isDirectory()) {
         throw new Error(`Minecraft com.mojang folder not found: ${mcRoot}\nOpen Minecraft first, or use --minecraft-path <folder>.`);
     }
+
     let lastSyncedFingerprint;
     function synchronize() {
         try {
             const fingerprint = fileFingerprint();
             if (fingerprint === lastSyncedFingerprint) return;
+
             const destinations = syncDevelopmentPacks(mcRoot);
             lastSyncedFingerprint = fingerprint;
             console.log(`Synced BP + RP (${new Date().toLocaleTimeString()})`);
+
             return destinations;
         } catch (error) {
             // The next source change can retry a failed sync.

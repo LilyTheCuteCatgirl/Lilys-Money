@@ -5,7 +5,6 @@ import { ensureMoneyObjectives, getScoreSafe } from "../modules/economy/balance.
 import { getDisplayOptions, hasCompactMoney } from "../modules/players/preferences.js";
 import { formatDisplayMoney } from "../modules/economy/formatting.js";
 import { getCommandSource, reply } from "../modules/commandSource.js";
-
 import { getSavedPlayerNameFromParticipant } from "../modules/players/nameDatabase.js";
 
 function buildTopMoneyMessage(rows, page, perPage, viewer) {
@@ -19,6 +18,7 @@ function buildTopMoneyMessage(rows, page, perPage, viewer) {
 
     if (slice.length === 0) {
         text += "§8No entries yet.";
+
         return text;
     }
 
@@ -32,6 +32,7 @@ function buildTopMoneyMessage(rows, page, perPage, viewer) {
     }
 
     text += `§8Tip: /topmoney ${safePage + 1} for next page`;
+
     return text.trimEnd();
 }
 
@@ -54,10 +55,12 @@ function handleTopMoney(origin, pageArg) {
 
         // Use the scoreboard ID when available so renamed participants keep one entry.
         const ids = new Map();
+
         for (const ident of p1) ids.set(String(ident?.id ?? ident?.displayName ?? Math.random()), ident);
         for (const ident of p2) ids.set(String(ident?.id ?? ident?.displayName ?? Math.random()), ident);
 
         const rows = [];
+
         for (const ident of ids.values()) {
             const d = getScoreSafe(dollarsObj, ident);
             const c = getScoreSafe(centsObj, ident);
@@ -84,15 +87,15 @@ export function registerBalanceTopCommands(customCommandRegistry) {
     };
 
     customCommandRegistry.registerCommand(
-        { name: `lilymoney:topmoney`, description: "Top money leaderboard: /topmoney [page]", ...def },
+        { name: "lilymoney:topmoney", description: "Top money leaderboard: /topmoney [page]", ...def },
         (origin, page) => handleTopMoney(origin, page),
     );
 
-    customCommandRegistry.registerCommand({ name: `lilymoney:baltop`, description: "Alias of /topmoney", ...def }, (origin, page) =>
+    customCommandRegistry.registerCommand({ name: "lilymoney:baltop", description: "Alias of /topmoney", ...def }, (origin, page) =>
         handleTopMoney(origin, page),
     );
 
-    customCommandRegistry.registerCommand({ name: `lilymoney:balancetop`, description: "Alias of /topmoney", ...def }, (origin, page) =>
+    customCommandRegistry.registerCommand({ name: "lilymoney:balancetop", description: "Alias of /topmoney", ...def }, (origin, page) =>
         handleTopMoney(origin, page),
     );
 }

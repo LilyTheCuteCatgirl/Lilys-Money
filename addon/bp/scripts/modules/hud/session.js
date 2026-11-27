@@ -24,6 +24,7 @@ function cardGroup(description, key) {
     if (description.startsWith("Auction:")) return "auction";
     if (/^(Paid |Received from )/.test(description)) return "payment";
     if (["Money added", "Money removed", "Balance set"].includes(description)) return "admin";
+
     return "other";
 }
 export function enqueueCard(state, cents, description, now, key = description, itemQuantity) {
@@ -44,8 +45,10 @@ export function enqueueCard(state, cents, description, now, key = description, i
             active.returnUntil = now + (now - active.holdUntil);
         }
         active.holdUntil = Math.max(now, active.start + ENTER, active.returnUntil ?? 0) + hold(state);
+
         return;
     }
+
     const label = description
         .replace(/§.|[\r\n\t]/g, " ")
         .replace(/~LM3:/g, "")
@@ -54,8 +57,10 @@ export function enqueueCard(state, cents, description, now, key = description, i
     const row = { key, group, description: label, cents, count: 1, itemQuantity };
     if (state.rows.length < ROWS) {
         state.rows.push({ ...row, start: now, holdUntil: now + ENTER + hold(state) });
+
         return;
     }
+
     const queued = state.waiting.find(matches);
     if (queued) {
         queued.cents += cents;
@@ -92,6 +97,7 @@ function notificationLine(row, now, options) {
         phase = "ABCD"[now - row.start];
     }
     if (options?.animate === false) phase = "S";
+
     const credit = row.cents > 0;
     const color = credit ? "§a" : "§c";
     const amount = (credit ? "+" : "") + formatCents(row.cents).replace("$", "");
@@ -107,15 +113,18 @@ function notificationLine(row, now, options) {
             count = "";
         }
     }
+
     return phase + color + label.replace(/~/g, "～") + count + (credit ? " §2§l" : " §4§l") + amount;
 }
 
 function padRow(line) {
     let bytes = 0;
+
     for (const char of line) {
         const point = char.codePointAt(0);
         bytes += point < 128 ? 1 : point < 2048 ? 2 : point < 65536 ? 3 : 4;
     }
+
     return line + "~".repeat(256 - bytes);
 }
 
@@ -126,6 +135,7 @@ export function updateHud(state, now, send, compact = false) {
             send(state.lastTitle);
             state.refreshAt = now + 600;
         }
+
         return;
     }
     expire(state, now);
@@ -138,6 +148,7 @@ export function updateHud(state, now, send, compact = false) {
         balance = formatDisplayMoney(state.observed, { ...state.options, group: "None" }, compact);
         bytes = balance.length;
     }
+
     const color = { Pink: "§d", Purple: "§5", Gold: "§6", Green: "§a" }[state.options?.color] ?? "§f";
     // Both styles occupy six UTF-8 bytes, keeping receipt offsets fixed for every color.
     const style = state.options?.boldBalance === false ? "§r" + color : color + "§l";

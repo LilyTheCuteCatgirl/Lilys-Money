@@ -6,7 +6,6 @@ import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from
 import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
 import { isAdminOrCommandBlock, getCommandSource, reply } from "../modules/commandSource.js";
 import { getInventoryContainer, canFitExact, addExactItems } from "../modules/inventory/items.js";
-
 import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
 // For command blocks, measure @p distances from the block.
@@ -24,6 +23,7 @@ function getRef(origin) {
             };
         } catch {}
     }
+
     return { dimId: null, loc: null, self: null };
 }
 
@@ -36,6 +36,7 @@ function nearestPlayer(ref) {
 
     for (const p of players) {
         if (p.dimension.id !== ref.dimId) continue;
+
         const l = p.location;
         const dx = l.x - ref.loc.x;
         const dy = l.y - ref.loc.y;
@@ -46,12 +47,14 @@ function nearestPlayer(ref) {
             best = p;
         }
     }
+
     return best ?? players[0] ?? null;
 }
 
 function randomPlayer() {
     const players = world.getAllPlayers();
     if (players.length === 0) return null;
+
     return players[Math.floor(Math.random() * players.length)];
 }
 
@@ -61,6 +64,7 @@ function findByName(nameRaw) {
     for (const p of world.getAllPlayers()) {
         if (p.name.toLowerCase() === name) return p;
     }
+
     return null;
 }
 
@@ -75,6 +79,7 @@ function resolveTarget(origin, raw) {
         if (low === "@p") return nearestPlayer(ref);
         if (low === "@r") return randomPlayer();
         if (low === "@s") return ref.self;
+
         return null;
     }
 
@@ -84,7 +89,7 @@ function resolveTarget(origin, raw) {
 export function registerBuyCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:buy`,
+            name: "lilymoney:buy",
             description:
                 "Admin/CB: give item(s) and charge money (no debt). Price is per item. /buy <player|@p|@r|@s> <item> <amount> <priceEach>",
             permissionLevel: CommandPermissionLevel.Any,
@@ -110,6 +115,7 @@ export function registerBuyCommand(customCommandRegistry) {
 
             const parsed = parseFloatToCents(priceFloat, false);
             if (!parsed.ok) return { status: CustomCommandStatus.Failure, message: chatText(parsed.error) };
+
             const unitPrice = parsed.cents;
             if (unitPrice <= 0) return { status: CustomCommandStatus.Failure, message: chatText("Price must be > 0.") };
 
@@ -133,6 +139,7 @@ export function registerBuyCommand(customCommandRegistry) {
                 const inv = getInventoryContainer(target);
                 if (!inv) {
                     sendChat(target, "§cNo inventory container.");
+
                     return;
                 }
 
@@ -140,17 +147,20 @@ export function registerBuyCommand(customCommandRegistry) {
 
                 if (bal < totalCost) {
                     sendChat(target, `§cNot enough money. Balance: §e${formatCents(bal)}§c, needed: §e${formatCents(totalCost)}§c.`);
+
                     return;
                 }
 
                 if (!canFitExact(inv, itemId, amountItems)) {
                     sendChat(target, "§cNot enough inventory space for that purchase.");
+
                     return;
                 }
 
                 const ok = addExactItems(inv, itemId, amountItems);
                 if (!ok) {
                     sendChat(target, "§cFailed to give items.");
+
                     return;
                 }
 

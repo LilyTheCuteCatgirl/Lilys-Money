@@ -5,6 +5,7 @@ export function clampTotalCents(totalCents) {
     const total = Math.floor(Number(totalCents) || 0);
     if (total < MONEY_MIN_TOTAL_CENTS) return MONEY_MIN_TOTAL_CENTS;
     if (total > MONEY_MAX_TOTAL_CENTS) return MONEY_MAX_TOTAL_CENTS;
+
     return total;
 }
 
@@ -31,6 +32,7 @@ export function formatCents(totalCents) {
     const abs = Math.abs(totalCents);
     const d = Math.floor(abs / 100);
     const c = abs % 100;
+
     return `${sign}$${d}.${String(c).padStart(2, "0")}`;
 }
 
@@ -48,6 +50,7 @@ export function formatCentsCompact(totalCents) {
     ];
 
     let unit = units[units.length - 1];
+
     for (const u of units) {
         if (absDollars >= u.v) {
             unit = u;
@@ -69,6 +72,7 @@ export function formatCentsCompact(totalCents) {
     }
 
     const num = rounded.toFixed(1).replace(/\.0$/, "");
+
     return `${sign}$${num}${unit.s}`;
 }
 
@@ -78,9 +82,11 @@ export function formatDisplayMoney(cents, options = {}, compact = false) {
     const text = shorten ? formatCentsCompact(cents) : formatCents(cents);
     const decimal = options.decimal === "Comma" ? "," : ".";
     if (/[kmbt]$/.test(text)) return text.replace(".", decimal);
+
     const [integer, fraction] = text.split(".");
     const separator = { Comma: ",", Period: ".", Space: " " }[options.group];
     const grouped = separator ? integer.replace(/\B(?=(\d{3})+(?!\d))/g, separator) : integer;
     if (options.cents === "Never" || (options.cents === "Hide .00" && fraction === "00")) return grouped;
+
     return grouped + decimal + fraction;
 }

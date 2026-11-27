@@ -12,11 +12,13 @@ const titles = {
 export async function openSettings(player) {
     const personal = "Personal Settings";
     const path = [isAdmin(player) ? ROOT : personal];
+
     while (path.length) {
         if (path[0] === ROOT && !isAdmin(player)) {
             if (path[1] === personal) path.shift();
             else path.splice(0, path.length, personal);
         }
+
         const current = path.at(-1);
         const admin = path.includes("Server Settings");
         const page = pages[current];
@@ -30,10 +32,12 @@ export async function openSettings(player) {
             path.pop();
             continue;
         }
+
         const form = new ActionFormData()
             .use8CrafterLayout(links.length > 5 ? "long" : "grid")
             .title(color + "§l" + (titles[current] ?? current))
             .body(page?.body ?? "Controls for this category are unavailable.");
+
         for (const [label, icon] of links) form.button(label, icon);
         const response = await form.show(player);
         const choice = links[response.selection]?.[0];

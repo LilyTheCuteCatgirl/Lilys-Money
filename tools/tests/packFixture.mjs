@@ -41,6 +41,7 @@ export async function packFixture(t) {
     const scheduled = [];
     function event() {
         const listeners = [];
+
         return {
             subscribe(fn) {
                 listeners.push(fn);
@@ -65,6 +66,7 @@ export async function packFixture(t) {
     let timerId = 0;
     system.runInterval = (callback, ticks) => {
         intervals.set(++timerId, { callback, ticks });
+
         return timerId;
     };
     system.clearRun = (id) => intervals.delete(id);
@@ -73,5 +75,6 @@ export async function packFixture(t) {
     world.getDynamicPropertyIds = () => [...properties.keys()];
     world.setDynamicProperty = (key, value) => (value === undefined ? properties.delete(key) : properties.set(key, value));
     system.runTimeout = (callback) => scheduled.push(callback);
+
     return { intervals, load, properties, scheduled, world, system };
 }

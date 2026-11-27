@@ -9,7 +9,7 @@ import { playMoneySound } from "../players/preferences.js";
 import { logMoneyEvent } from "../logging/moneylogging.js";
 
 const JOB_TAG_PREFIX = "job:";
-const JOB_STATS_DP_KEY = `lilymoney:job_stats_v1`;
+const JOB_STATS_DP_KEY = "lilymoney:job_stats_v1";
 const PLACED_TTL_TICKS = 20 * 60 * 30;
 const _placedBlocks = new Map();
 
@@ -17,6 +17,7 @@ function _posKey(dimId, loc) {
     const x = Math.floor(loc.x);
     const y = Math.floor(loc.y);
     const z = Math.floor(loc.z);
+
     return `${dimId}|${x}|${y}|${z}`;
 }
 
@@ -38,8 +39,10 @@ function _wasPlaced(dimId, loc) {
     const now = system.currentTick;
     if (now >= exp) {
         _placedBlocks.delete(key);
+
         return false;
     }
+
     return true;
 }
 function _consumePlaced(dimId, loc) {
@@ -77,6 +80,7 @@ function isMatureEnough(blockId, permutation) {
     if (!rule) return true;
     try {
         const v = permutation?.getState(rule.state);
+
         return typeof v === "number" && v >= rule.max;
     } catch {
         return false;
@@ -95,10 +99,12 @@ export function getCurrentJobId(player) {
 
     if (jobTags.length === 0) {
         if (key) _jobIdCacheByPlayerId.set(key, null);
+
         return null;
     }
 
     const keep = jobTags[0].slice(JOB_TAG_PREFIX.length) || null;
+
     for (let i = 1; i < jobTags.length; i++) {
         try {
             player.removeTag(jobTags[i]);
@@ -106,6 +112,7 @@ export function getCurrentJobId(player) {
     }
 
     if (key) _jobIdCacheByPlayerId.set(key, keep);
+
     return keep;
 }
 
@@ -113,8 +120,10 @@ export function setJob(player, jobIdOrNull) {
     const options = serverOptions();
     if (!options.jobs) {
         sendChat(player, "Jobs are disabled.");
+
         return false;
     }
+
     const now = Date.now();
     const last = Number(player.getDynamicProperty?.("lilymoney:last_job_change") ?? 0);
     const remainingSeconds = Math.ceil((options.cooldown * 60000 - (now - last)) / 1000);
@@ -123,6 +132,7 @@ export function setJob(player, jobIdOrNull) {
         const seconds = remainingSeconds % 60;
         const remaining = minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
         sendChat(player, `You can change jobs again in ${remaining}.`);
+
         return false;
     }
     player.setDynamicProperty?.("lilymoney:last_job_change", now);
@@ -140,6 +150,7 @@ export function setJob(player, jobIdOrNull) {
     }
 
     if (player?.id) _jobIdCacheByPlayerId.set(player.id, jobIdOrNull || null);
+
     return true;
 }
 
@@ -163,9 +174,11 @@ let _statsDirty = false;
 function loadStats() {
     const raw = world.getDynamicProperty(JOB_STATS_DP_KEY);
     if (raw === undefined) return { v: 1, players: {} };
+
     const parsed = JSON.parse(raw);
     if (parsed?.v !== 1 || !parsed.players || typeof parsed.players !== "object" || Array.isArray(parsed.players))
         throw new Error("Invalid saved job statistics.");
+
     return parsed;
 }
 
@@ -175,12 +188,14 @@ function markEarn(player, jobId, kind, id, centsEarned, count = 1) {
     if (!_statsBuffer[name]) {
         _statsBuffer[name] = { totalEarnedCents: 0, jobs: {} };
     }
+
     const p = _statsBuffer[name];
     p.totalEarnedCents += centsEarned;
 
     if (!p.jobs[jobId]) {
         p.jobs[jobId] = { earnedCents: 0, breakCount: 0, placeCount: 0, killCount: 0, pickupCount: 0 };
     }
+
     const j = p.jobs[jobId];
     j.earnedCents += centsEarned;
 
@@ -206,6 +221,7 @@ configuredInterval("stats", () => {
                 if (!base.players[playerName].jobs[jobId]) {
                     base.players[playerName].jobs[jobId] = { earnedCents: 0, breakCount: 0, placeCount: 0, killCount: 0, pickupCount: 0 };
                 }
+
                 const dst = base.players[playerName].jobs[jobId];
                 dst.earnedCents += jd.earnedCents;
                 dst.breakCount += jd.breakCount;
@@ -220,6 +236,7 @@ configuredInterval("stats", () => {
         world.setDynamicProperty(JOB_STATS_DP_KEY, json);
     } catch (error) {
         console.warn(`[Jobs] Statistics flush deferred: ${error}`);
+
         return;
     }
 

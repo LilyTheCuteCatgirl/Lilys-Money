@@ -5,9 +5,7 @@ import { CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, Pl
 import { ensureMoneyObjectives, getBalanceCents, setBalanceFromTotalCents } from "../modules/economy/balance.js";
 import { parseFloatToCents, formatCents } from "../modules/economy/formatting.js";
 import { getCommandSource, isCommandBlock, reply } from "../modules/commandSource.js";
-
 import { playMoneySound } from "../modules/players/preferences.js";
-
 import { logMoneyEvent } from "../modules/logging/moneylogging.js";
 
 function resolvePaySelectorTarget(source, targetArg) {
@@ -35,7 +33,7 @@ function resolvePaySelectorTarget(source, targetArg) {
 export function registerPayCommand(customCommandRegistry) {
     customCommandRegistry.registerCommand(
         {
-            name: `lilymoney:pay`,
+            name: "lilymoney:pay",
             description: "Pay another player (no debt) /pay <player|@p|@r|@s> <amount>",
             permissionLevel: CommandPermissionLevel.Any,
             cheatsRequired: false,
@@ -53,6 +51,7 @@ export function registerPayCommand(customCommandRegistry) {
 
             const parsedAmount = parseFloatToCents(amountFloat, false);
             if (!parsedAmount.ok) return { status: CustomCommandStatus.Failure, message: chatText(parsedAmount.error) };
+
             const amount = parsedAmount.cents;
             if (amount <= 0) return { status: CustomCommandStatus.Failure, message: chatText("Amount must be > 0.") };
 
@@ -68,12 +67,14 @@ export function registerPayCommand(customCommandRegistry) {
 
             system.run(() => {
                 if (!serverOptions().pay) return reply(origin, "Player payments are disabled.");
+
                 const { dollarsObj, centsObj } = ensureMoneyObjectives();
                 if (!dollarsObj || !centsObj) return;
 
                 const senderBal = getBalanceCents(dollarsObj, centsObj, source);
                 if (senderBal < amount) {
                     reply(origin, `§cNot enough money. Balance: §e${formatCents(senderBal)}§c, needed: §e${formatCents(amount)}§c.`);
+
                     return;
                 }
 

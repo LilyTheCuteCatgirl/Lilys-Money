@@ -20,7 +20,9 @@ function readDocument(base, version) {
             throw new Error("Invalid chunk metadata.");
         count = parsed.parts;
     }
+
     const parts = [];
+
     for (let i = 0; i < count; i++) {
         const part = world.getDynamicProperty(partPrefix + i);
         if (typeof part !== "string" || !part.length) throw new Error("Missing chunk " + i);
@@ -29,14 +31,17 @@ function readDocument(base, version) {
     for (const key of present) {
         const index = Number(key.slice(partPrefix.length));
         if (Number.isInteger(index) && index >= 0 && index < count && key === partPrefix + index) continue;
+
         const value = world.getDynamicProperty(key);
         if (value !== undefined && value !== "") throw new Error("Unexpected chunk " + key);
     }
     if (count) return { meta, raw: parts.join(""), count };
     if (meta !== undefined && meta !== "") return { meta, raw: "", count };
+
     const legacy = world.getDynamicProperty(base);
     if (legacy !== undefined && typeof legacy !== "string") throw new Error("Invalid legacy document.");
     if ((meta === "" || legacy === "") && !legacy) throw new Error("Incomplete cleared database.");
+
     return { meta, raw: legacy || undefined, count };
 }
 
@@ -44,6 +49,7 @@ function chunkDocument(text) {
     const parts = [];
     let part = "";
     let bytes = 0;
+
     for (const char of text) {
         const code = char.codePointAt(0);
         const size = code < 128 ? 1 : code < 2048 ? 2 : code < 65536 ? 3 : 4;
@@ -57,6 +63,7 @@ function chunkDocument(text) {
     }
     parts.push(part);
     if (parts.length >= 300) throw new Error("Document exceeds the existing chunk limit.");
+
     return parts;
 }
 
@@ -112,6 +119,7 @@ export function createDocumentStore(base, version, { initial, empty, decode, leg
         refresh();
         const draft = cloneDocument(cached);
         revisions.set(draft, revision);
+
         return draft;
     }
     function current(draft) {
@@ -135,6 +143,7 @@ export function createDocumentStore(base, version, { initial, empty, decode, leg
                 revision++;
                 throw new Error("Stored document changed. Reopen the menu.");
             }
+
             const clean = decode(draft);
             const raw = JSON.stringify(clean);
             const parts = chunkDocument(raw);
@@ -150,6 +159,7 @@ export function createDocumentStore(base, version, { initial, empty, decode, leg
             cached = clean;
             source = { meta, raw, count: parts.length };
             revision++;
+
             return true;
         } catch (error) {
             for (const [key, value] of written.reverse()) {
@@ -162,8 +172,10 @@ export function createDocumentStore(base, version, { initial, empty, decode, leg
                 }
             }
             console.warn(`[${base}] Save refused: ${error}`);
+
             return false;
         }
     }
+
     return { load, save, stage };
 }

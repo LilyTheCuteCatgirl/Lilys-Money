@@ -2,22 +2,27 @@ import { stackToTemplate, templateKey, templateToStack } from "../items/template
 
 export function stackMatchesTemplate(stack, template) {
     if (!stack || !template) return false;
+
     const current = stackToTemplate(stack);
+
     return current !== null && templateKey(current) === templateKey(template);
 }
 
 export function getCapacityForTemplate(container, template) {
     const probe = templateToStack(template, 1);
     if (!probe) return 0;
+
     const restoredTemplate = stackToTemplate(probe);
     const stackLimit = probe.isStackable ? probe.maxAmount : 1;
     let capacity = 0;
+
     for (let i = 0; i < container.size; i++) {
         const stack = container.getItem(i);
         if (!stack) capacity += stackLimit;
         else if (stack.amount < stackLimit && stack.isStackableWith(probe) && stackMatchesTemplate(stack, restoredTemplate))
             capacity += stackLimit - stack.amount;
     }
+
     return capacity;
 }
 
@@ -29,15 +34,19 @@ function writeTradeSlot(container, slot, next, onRollback) {
 
 export function addTemplateItems(container, template, amount, onRollback) {
     if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("Invalid item count.");
+
     const probe = templateToStack(template, 1);
     if (!probe) throw new Error("Item cannot be reconstructed.");
+
     const restoredTemplate = stackToTemplate(probe);
     const stackLimit = probe.isStackable ? probe.maxAmount : 1;
     let remaining = amount;
+
     for (let i = 0; i < container.size && remaining; i++) {
         const stack = container.getItem(i);
         if (!stack || stack.amount >= stackLimit || !stack.isStackableWith(probe) || !stackMatchesTemplate(stack, restoredTemplate))
             continue;
+
         const count = Math.min(remaining, stackLimit - stack.amount);
         const next = stack.clone();
         next.amount += count;
@@ -46,6 +55,7 @@ export function addTemplateItems(container, template, amount, onRollback) {
     }
     for (let i = 0; i < container.size && remaining; i++) {
         if (container.getItem(i)) continue;
+
         const count = Math.min(stackLimit, remaining);
         const next = probe.clone();
         next.amount = count;

@@ -27,6 +27,7 @@ function validName(value) {
 
 function load() {
     if (database) return database;
+
     const names = new Map();
     const legacy = world.getDynamicProperty(CONFIG.NAME_CACHE_DP_KEY);
     if (typeof legacy === "string") {
@@ -45,6 +46,7 @@ function load() {
     let writable = validCount;
     // Enumerate existing keys so a damaged count cannot cause an unbounded read loop.
     const indexes = [];
+
     for (const key of world.getDynamicPropertyIds()) {
         if (key === NAME_PROPERTY) indexes.push(1);
         else if (key.startsWith(NAME_PROPERTY)) {
@@ -55,10 +57,13 @@ function load() {
     indexes.sort((a, b) => a - b);
     const empty = rawCount === undefined && indexes.length === 0;
     if (!empty && indexes.length !== count) writable = false;
+
     let tail = Object.create(null);
+
     for (const [position, index] of indexes.entries()) {
         if (index !== position + 1 || index > count) writable = false;
         if (index > count && validCount) continue;
+
         const raw = world.getDynamicProperty(pageKey(index));
         let page;
         try {
@@ -82,16 +87,19 @@ function load() {
             "Incomplete or invalid name database. Valid names are available. Disk writes are paused until the data is repaired and scripts reload.",
         );
     database = { names, count, tail, writable };
+
     return database;
 }
 
 // Bedrock limits string properties by UTF-8 bytes. JSON.stringify escapes lone surrogates.
 function utf8Bytes(text) {
     let bytes = 0;
+
     for (const char of text) {
         const cp = char.codePointAt(0);
         bytes += cp <= 0x7f ? 1 : cp <= 0x7ff ? 2 : cp <= 0xffff ? 3 : 4;
     }
+
     return bytes;
 }
 
@@ -111,6 +119,7 @@ export function flushSavedPlayerNames() {
         if (!db.writable) return;
 
         let size = utf8Bytes(JSON.stringify(db.tail));
+
         // Earlier pages stay in place. A renamed identity in a later page wins on load.
         for (const [id, name] of pending) {
             const entrySize = utf8Bytes(JSON.stringify(id)) + 1 + utf8Bytes(JSON.stringify(name));
@@ -148,6 +157,7 @@ export function getSavedPlayerNameByIdentityId(identityId) {
         return load().names.get(key) ?? null;
     } catch (error) {
         warn(`Could not read player names. ${error}`);
+
         return null;
     }
 }
@@ -160,9 +170,11 @@ export function rememberPlayerName(player) {
         if (getSavedPlayerNameByIdentityId(id) === name) return false;
         pending.set(String(id), name);
         scheduleSave();
+
         return true;
     } catch (error) {
         warn(`Could not record a player name. ${error}`);
+
         return false;
     }
 }
@@ -184,5 +196,6 @@ export function getAllSavedPlayerNameEntries() {
         names = new Map();
     }
     for (const [id, name] of pending) names.set(id, name);
+
     return Array.from(names, ([identityId, name]) => ({ identityId, name }));
 }

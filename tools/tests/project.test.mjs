@@ -43,6 +43,7 @@ test("build packages both complete packs and includes their manifests and script
         const archive = fs.readFileSync(output);
         assert.equal(archive.readUInt32LE(0), 0x04034b50);
         let offset = 0;
+
         while (archive.readUInt32LE(offset) === 0x04034b50) {
             const compressedSize = archive.readUInt32LE(offset + 18);
             const nameEnd = offset + 30 + archive.readUInt16LE(offset + 26);
