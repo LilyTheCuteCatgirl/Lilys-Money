@@ -77,7 +77,7 @@ export function buyAuction(player, auctionId) {
         msg(player, "§cPurchase failed. Check the Content Log for details.");
         return "details";
     }
-    recordHudChange(player, buyerBalanceAfter + a.price, buyerBalanceAfter, `Auction: bought ${auctionTitle(a)}`);
+    recordHudChange(player, buyerBalanceAfter + a.price, buyerBalanceAfter, `Auction: bought ${auctionTitle(a)}`, undefined, a.amount);
     settleAuctionSeller(a.sellerIdentityId, sellerBalanceAfter - a.price, sellerBalanceAfter);
     logMoneyEvent("AH_BUY", {
         buyer: player,

@@ -29,7 +29,7 @@ function buildShopItemDetailsBody(player, it) {
     if (!t) {
         lines.push(`§8Item: §f${niceIdName(it.id)}`);
         lines.push(`§8ID: §8${it.id}`);
-        return lines.join("\n");
+        return lines.join("§r\n");
     }
 
     lines.push("§dCustom item");
@@ -112,7 +112,7 @@ function buildShopItemDetailsBody(player, it) {
         lines.push(`§8Custom data: §e${dynCount} properties`);
     }
 
-    return lines.join("\n");
+    return lines.join("§r\n");
 }
 
 export async function openShopEntry(player, itemQuery) {

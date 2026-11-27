@@ -91,7 +91,7 @@ function buildAuctionDetailsBody(a, t, title, own) {
 
     if (own) lines.push("", "§2§lThis is your auction.");
 
-    if (!t) return lines.join("\n");
+    if (!t) return lines.join("§r\n");
 
     lines.push("", `§8Type: §f${niceIdName(t.typeId)}`);
     lines.push(`§8ID: §l${t.typeId}`);
@@ -119,7 +119,7 @@ function buildAuctionDetailsBody(a, t, title, own) {
         lines.push("", `§8Custom data: §e${dynCount} properties`);
     }
 
-    return lines.join("\n");
+    return lines.join("§r\n");
 }
 
 function describeStack(stack) {

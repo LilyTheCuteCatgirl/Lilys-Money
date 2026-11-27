@@ -103,7 +103,7 @@ function notificationLine(row, now, options) {
     if (row.itemQuantity !== undefined && options?.quantity !== false) {
         if (options?.names === false) count = ` §cx${row.itemQuantity}`;
         else {
-            label = label.replace(/^(Shop: (?:bought|sold)) /, `$1 ${row.itemQuantity} `);
+            label = label.replace(/^Auction: bought /, `Auction: bought x${row.itemQuantity} `);
             count = "";
         }
     }

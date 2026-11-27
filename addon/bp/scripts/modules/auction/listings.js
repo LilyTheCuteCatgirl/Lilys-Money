@@ -88,8 +88,12 @@ function buildSearchText(auction) {
     const name = stripColors(t?.nameTag || niceIdName(id)).toLowerCase();
     const seller = String(auction?.sellerName ?? "").toLowerCase();
     const lore = Array.isArray(t?.lore) ? stripColors(t.lore.join(" ")).toLowerCase() : "";
+    const enchants = (t?.enchantments ?? [])
+        .map((e) => `${e.id} ${niceIdName(e.id)}`)
+        .join(" ")
+        .toLowerCase();
 
-    return `${id} ${short} ${spaced} ${name} ${seller} ${lore}`;
+    return `${id} ${short} ${spaced} ${name} ${seller} ${lore} ${enchants}`;
 }
 
 export function searchAuctions(query, ah = loadAh()) {
